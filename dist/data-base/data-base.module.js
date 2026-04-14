@@ -10,6 +10,10 @@ exports.DatabaseModule = void 0;
 const common_1 = require("@nestjs/common");
 const data_base_service_1 = require("./data-base.service");
 const typeorm_1 = require("@nestjs/typeorm");
+const data_counters_entity_1 = require("./entities/data.counters.entity");
+const data_locations_entity_1 = require("./entities/data.locations.entity");
+const data_media_measurements_entity_1 = require("./entities/data.media-measurements.entity");
+const data_media_calculated_data_entity_1 = require("./entities/data.media-calculated-data.entity");
 let DatabaseModule = class DatabaseModule {
 };
 exports.DatabaseModule = DatabaseModule;
@@ -24,10 +28,12 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                 password: '123',
                 database: 'Test',
                 autoLoadEntities: true,
+                synchronize: true,
                 options: {
                     encrypt: false,
                     trustServerCertificate: true,
                 },
+                entities: [data_counters_entity_1.Counters, data_media_calculated_data_entity_1.MediaCalculatedData, data_media_measurements_entity_1.MediaMeasurements, data_locations_entity_1.Locations],
             }),
         ],
         providers: [data_base_service_1.DataBaseService],
