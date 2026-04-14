@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DataBaseService } from './data-base.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Counters } from './entities/data.counters.entity';
+import { Locations } from './entities/data.locations.entity';
+import { MediaMeasurements } from './entities/data.media-measurements.entity';
+import { MediaCalculatedData } from './entities/data.media-calculated-data.entity';
 
 @Module({
   imports: [
@@ -17,6 +21,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         encrypt: false,
         trustServerCertificate: true,
       },
+      entities: [Counters, MediaCalculatedData, MediaMeasurements, Locations],
     }),
   ],
   providers: [DataBaseService],
