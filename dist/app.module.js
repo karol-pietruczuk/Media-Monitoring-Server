@@ -18,6 +18,12 @@ const app_service_1 = require("./app.service");
 const data_plc_module_1 = require("./data-plc/data-plc.module");
 const data_base_module_1 = require("./data-base/data-base.module");
 const data_sync_module_1 = require("./data-sync/data-sync.module");
+const data_base_service_1 = require("./data-base/data-base.service");
+const typeorm_1 = require("@nestjs/typeorm");
+const data_counter_entity_1 = require("./data-base/entities/data.counter.entity");
+const data_media_calculated_data_entity_1 = require("./data-base/entities/data.media-calculated-data.entity");
+const data_media_measurement_entity_1 = require("./data-base/entities/data.media-measurement.entity");
+const data_location_entity_1 = require("./data-base/entities/data.location.entity");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,12 +34,18 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 load: [configuration_1.default],
             }),
+            typeorm_1.TypeOrmModule.forFeature([
+                data_counter_entity_1.Counter,
+                data_media_calculated_data_entity_1.MediaCalculatedData,
+                data_media_measurement_entity_1.MediaMeasurement,
+                data_location_entity_1.Location,
+            ]),
             data_plc_module_1.DataPlcModule,
-            data_base_module_1.DatabaseModule,
+            data_base_module_1.DataBaseModule,
             data_sync_module_1.DataSyncModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
+        providers: [app_service_1.AppService, data_base_service_1.DataBaseService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

@@ -5,11 +5,11 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counters } from './data.counters.entity';
+import { Counter } from './data.counter.entity';
 
 @Index('PK_LOCATION', ['id'], { unique: true })
 @Entity('LOCATIONS', { schema: 'dbo' })
-export class Locations {
+export class Location {
   @PrimaryGeneratedColumn({ type: 'int', name: 'ID' })
   id!: number;
 
@@ -19,6 +19,6 @@ export class Locations {
   @Column('nvarchar', { name: 'SUB_LOCATION', nullable: true, length: 50 })
   subLocation!: string | null;
 
-  @OneToMany(() => Counters, (counters) => counters.location)
-  counters!: Counters[];
+  @OneToMany(() => Counter, (counter) => counter.location)
+  counter!: Counter[];
 }
