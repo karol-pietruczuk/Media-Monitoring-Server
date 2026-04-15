@@ -6,7 +6,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counters } from './data.counters.entity';
+import { Counter } from './data.counter.entity';
 
 @Index('PK_MEDIA_CALCULATED_DATA', ['id'], { unique: true })
 @Index('UQ__MEDIA_CA__08ABF5E959946735', ['countersId'], { unique: true })
@@ -39,7 +39,7 @@ export class MediaCalculatedData {
   @Column('bigint', { name: 'PULSES_AFTER_CALIBRATION' })
   pulsesAfterCalibration!: string;
 
-  @OneToOne(() => Counters, (counters) => counters.mediaCalculatedData)
+  @OneToOne(() => Counter, (counter) => counter.mediaCalculatedData)
   @JoinColumn([{ name: 'COUNTERS_ID', referencedColumnName: 'id' }])
-  counters!: Counters;
+  counter!: Counter;
 }

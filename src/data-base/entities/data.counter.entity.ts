@@ -8,13 +8,13 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Locations } from './data.locations.entity';
+import { Location } from './data.location.entity';
 import { MediaCalculatedData } from './data.media-calculated-data.entity';
-import { MediaMeasurements } from './data.media-measurements.entity';
+import { MediaMeasurement } from './data.media-measurement.entity';
 
 @Index('PK_COUNTERS', ['id'], { unique: true })
 @Entity('COUNTERS', { schema: 'dbo' })
-export class Counters {
+export class Counter {
   @PrimaryGeneratedColumn({ type: 'int', name: 'ID' })
   id!: number;
 
@@ -24,19 +24,19 @@ export class Counters {
   @Column('nvarchar', { name: 'NAME', length: 50 })
   name!: string;
 
-  @ManyToOne(() => Locations, (locations) => locations.counters)
+  @ManyToOne(() => Location, (location) => location.counter)
   @JoinColumn([{ name: 'LOCATION_ID', referencedColumnName: 'id' }])
-  location!: Locations;
+  location!: Location;
 
   @OneToOne(
     () => MediaCalculatedData,
-    (mediaCalculatedData) => mediaCalculatedData.counters,
+    (mediaCalculatedData) => mediaCalculatedData.counter,
   )
   mediaCalculatedData!: MediaCalculatedData;
 
   @OneToMany(
-    () => MediaMeasurements,
+    () => MediaMeasurement,
     (mediaMeasurements) => mediaMeasurements.counter,
   )
-  mediaMeasurements!: MediaMeasurements[];
+  mediaMeasurement!: MediaMeasurement[];
 }

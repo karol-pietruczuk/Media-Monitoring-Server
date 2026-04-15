@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DataBaseService } from './data-base.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Counters } from './entities/data.counters.entity';
-import { Locations } from './entities/data.locations.entity';
-import { MediaMeasurements } from './entities/data.media-measurements.entity';
+import { Counter } from './entities/data.counter.entity';
+import { Location } from './entities/data.location.entity';
 import { MediaCalculatedData } from './entities/data.media-calculated-data.entity';
+import { MediaMeasurement } from './entities/data.media-measurement.entity';
 
 @Module({
   imports: [
@@ -16,14 +16,19 @@ import { MediaCalculatedData } from './entities/data.media-calculated-data.entit
       password: '123',
       database: 'Test',
       autoLoadEntities: true,
-      //synchronize: true, // ⚠️ tylko dev!
+      synchronize: true, // ⚠️ tylko dev!
       options: {
         encrypt: false,
         trustServerCertificate: true,
       },
-      entities: [Counters, MediaCalculatedData, MediaMeasurements, Locations],
     }),
+    TypeOrmModule.forFeature([
+      Counter,
+      MediaCalculatedData,
+      MediaMeasurement,
+      Location,
+    ]),
   ],
   providers: [DataBaseService],
 })
-export class DatabaseModule {}
+export class DataBaseModule {}

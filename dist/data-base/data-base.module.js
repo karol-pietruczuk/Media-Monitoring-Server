@@ -6,18 +6,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DatabaseModule = void 0;
+exports.DataBaseModule = void 0;
 const common_1 = require("@nestjs/common");
 const data_base_service_1 = require("./data-base.service");
 const typeorm_1 = require("@nestjs/typeorm");
-const data_counters_entity_1 = require("./entities/data.counters.entity");
-const data_locations_entity_1 = require("./entities/data.locations.entity");
-const data_media_measurements_entity_1 = require("./entities/data.media-measurements.entity");
+const data_counter_entity_1 = require("./entities/data.counter.entity");
+const data_location_entity_1 = require("./entities/data.location.entity");
 const data_media_calculated_data_entity_1 = require("./entities/data.media-calculated-data.entity");
-let DatabaseModule = class DatabaseModule {
+const data_media_measurement_entity_1 = require("./entities/data.media-measurement.entity");
+let DataBaseModule = class DataBaseModule {
 };
-exports.DatabaseModule = DatabaseModule;
-exports.DatabaseModule = DatabaseModule = __decorate([
+exports.DataBaseModule = DataBaseModule;
+exports.DataBaseModule = DataBaseModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forRoot({
@@ -33,10 +33,15 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                     encrypt: false,
                     trustServerCertificate: true,
                 },
-                entities: [data_counters_entity_1.Counters, data_media_calculated_data_entity_1.MediaCalculatedData, data_media_measurements_entity_1.MediaMeasurements, data_locations_entity_1.Locations],
             }),
+            typeorm_1.TypeOrmModule.forFeature([
+                data_counter_entity_1.Counter,
+                data_media_calculated_data_entity_1.MediaCalculatedData,
+                data_media_measurement_entity_1.MediaMeasurement,
+                data_location_entity_1.Location,
+            ]),
         ],
         providers: [data_base_service_1.DataBaseService],
     })
-], DatabaseModule);
+], DataBaseModule);
 //# sourceMappingURL=data-base.module.js.map
