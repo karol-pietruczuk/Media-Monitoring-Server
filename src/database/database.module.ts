@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { DataBaseService } from './data-base.service';
+import { DataBaseService } from './database.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Counter } from './entities/data.counter.entity';
-import { Location } from './entities/data.location.entity';
-import { MediaCalculatedData } from './entities/data.media-calculated-data.entity';
-import { MediaMeasurement } from './entities/data.media-measurement.entity';
+import { Counter } from './entities/database.counter.entity';
+import { Location } from './entities/database.location.entity';
+import { MediaCalculatedData } from './entities/database.media-calculated-data.entity';
+import { MediaMeasurement } from './entities/database.media-measurement.entity';
 
 @Module({
   imports: [

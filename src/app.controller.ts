@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
-import { DataBaseService } from './data-base/data-base.service';
-import { CreateLocationDto } from './data-base/dto/create-location.dto';
+import { DataBaseService } from './database/database.service';
+import { CreateLocationDto } from './database/dto/create-location.dto';
 
 @Controller()
 export class AppController {
