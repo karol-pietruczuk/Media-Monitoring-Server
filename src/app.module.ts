@@ -4,14 +4,14 @@ import configuration from './config/configuration';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DataPlcModule } from './data-plc/data-plc.module';
-import { DataBaseModule } from './data-base/data-base.module';
+import { DataBaseModule } from './database/database.module';
 import { DataSyncModule } from './data-sync/data-sync.module';
-import { DataBaseService } from './data-base/data-base.service';
+import { DataBaseService } from './database/database.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Counter } from './data-base/entities/data.counter.entity';
-import { MediaCalculatedData } from './data-base/entities/data.media-calculated-data.entity';
-import { MediaMeasurement } from './data-base/entities/data.media-measurement.entity';
-import { Location } from './data-base/entities/data.location.entity';
+import { Counter } from './database/entities/database.counter.entity';
+import { MediaCalculatedData } from './database/entities/database.media-calculated-data.entity';
+import { MediaMeasurement } from './database/entities/database.media-measurement.entity';
+import { Location } from './database/entities/database.location.entity';
 
 @Module({
   imports: [

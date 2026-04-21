@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
-const data_base_service_1 = require("./data-base/data-base.service");
-const create_location_dto_1 = require("./data-base/dto/create-location.dto");
+const database_service_1 = require("./database/database.service");
+const create_location_dto_1 = require("./database/dto/create-location.dto");
 let AppController = class AppController {
     appService;
     dataBaseService;
@@ -48,6 +48,6 @@ __decorate([
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService,
-        data_base_service_1.DataBaseService])
+        database_service_1.DataBaseService])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map
