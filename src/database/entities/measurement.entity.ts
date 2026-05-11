@@ -6,12 +6,12 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from './database.counter.entity';
+import { Counter } from './counter.entity';
 
 @Index('PK_MEDIA_MEASUREMENT', ['id'], { unique: true })
 @Index('UQ_MEDIA_MEASUREMENT_TIMESTAMP', ['timestamp'], { unique: true })
-@Entity('mediaMeasurement', { schema: 'dbo' })
-export class MediaMeasurement {
+@Entity('measurement', { schema: 'dbo' })
+export class Measurement {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
@@ -32,7 +32,7 @@ export class MediaMeasurement {
   })
   createdAt!: Date;
 
-  @ManyToOne(() => Counter, (counter) => counter.mediaMeasurement)
+  @ManyToOne(() => Counter, (counter) => counter.measurement)
   @JoinColumn([{ name: 'counterId', referencedColumnName: 'id' }])
   counter!: Counter;
 }

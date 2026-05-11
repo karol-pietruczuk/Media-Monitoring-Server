@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import { CreateLocationDto } from './dto/create-location.dto';
-import { Location } from './entities/database.location.entity';
+import { Location } from './entities/location.entity';
 
 @Injectable()
 export class DataBaseService {

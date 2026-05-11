@@ -6,5 +6,5 @@ export declare class AppController {
     private readonly dataBaseService;
     constructor(appService: AppService, dataBaseService: DataBaseService);
     getHello(): string;
-    TESTCreateLocation(createLocationDto: CreateLocationDto): Promise<import("./database/entities/database.location.entity").Location>;
+    TESTCreateLocation(createLocationDto: CreateLocationDto): Promise<import("./database/entities/location.entity").Location>;
 }
