@@ -19,11 +19,7 @@ const data_plc_module_1 = require("./data-plc/data-plc.module");
 const database_module_1 = require("./database/database.module");
 const data_sync_module_1 = require("./data-sync/data-sync.module");
 const database_service_1 = require("./database/database.service");
-const typeorm_1 = require("@nestjs/typeorm");
-const counter_entity_1 = require("./database/entities/counter.entity");
-const calculated_data_entity_1 = require("./database/entities/calculated-data.entity");
-const measurement_entity_1 = require("./database/entities/measurement.entity");
-const location_entity_1 = require("./database/entities/location.entity");
+const location_module_1 = require("./location/location.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,10 +30,10 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 load: [configuration_1.default],
             }),
-            typeorm_1.TypeOrmModule.forFeature([counter_entity_1.Counter, calculated_data_entity_1.CalculatedData, measurement_entity_1.Measurement, location_entity_1.Location]),
             data_plc_module_1.DataPlcModule,
             database_module_1.DataBaseModule,
             data_sync_module_1.DataSyncModule,
+            location_module_1.LocationModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService],

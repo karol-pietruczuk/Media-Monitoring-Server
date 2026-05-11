@@ -5,7 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from './counter.entity';
+import { Counter } from '../../database/entities/counter.entity';
 
 @Index('PK_LOCATION', ['id'], { unique: true })
 @Entity('location', { schema: 'dbo' })
