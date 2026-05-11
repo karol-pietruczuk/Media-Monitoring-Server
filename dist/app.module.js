@@ -20,6 +20,7 @@ const database_module_1 = require("./database/database.module");
 const data_sync_module_1 = require("./data-sync/data-sync.module");
 const database_service_1 = require("./database/database.service");
 const location_module_1 = require("./location/location.module");
+const location_service_1 = require("./location/location.service");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,7 +37,7 @@ exports.AppModule = AppModule = __decorate([
             location_module_1.LocationModule,
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService, database_service_1.DataBaseService],
+        providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

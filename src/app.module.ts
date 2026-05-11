@@ -8,6 +8,7 @@ import { DataBaseModule } from './database/database.module';
 import { DataSyncModule } from './data-sync/data-sync.module';
 import { DataBaseService } from './database/database.service';
 import { LocationModule } from './location/location.module';
+import { LocationService } from './location/location.service';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { LocationModule } from './location/location.module';
     LocationModule,
   ],
   controllers: [AppController],
-  providers: [AppService, DataBaseService],
+  providers: [AppService, DataBaseService, LocationService],
 })
 export class AppModule {}

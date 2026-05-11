@@ -1,12 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DataBaseService } from './database/database.service';
+import { CreateLocationDto } from './location/dto/create-location.dto';
+import { LocationService } from './location/location.service';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly dataBaseService: DataBaseService,
+    private readonly locationService: LocationService,
   ) {}
 
   @Get()
@@ -14,8 +17,8 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  // @Post()
-  // async TESTCreateLocation(@Body() createLocationDto: CreateLocationDto) {
-  //   return await this.dataBaseService.createLocation(createLocationDto);
-  // }
+  @Post()
+  async TESTCreateLocation(@Body() createLocationDto: CreateLocationDto) {
+    return await this.locationService.createLocation(createLocationDto);
+  }
 }
