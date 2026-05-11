@@ -8,10 +8,10 @@ import { DataBaseModule } from './database/database.module';
 import { DataSyncModule } from './data-sync/data-sync.module';
 import { DataBaseService } from './database/database.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Counter } from './database/entities/database.counter.entity';
-import { MediaCalculatedData } from './database/entities/database.media-calculated-data.entity';
-import { MediaMeasurement } from './database/entities/database.media-measurement.entity';
-import { Location } from './database/entities/database.location.entity';
+import { Counter } from './database/entities/counter.entity';
+import { CalculatedData } from './database/entities/calculated-data.entity';
+import { Measurement } from './database/entities/measurement.entity';
+import { Location } from './database/entities/location.entity';
 
 @Module({
   imports: [
@@ -19,12 +19,7 @@ import { Location } from './database/entities/database.location.entity';
       isGlobal: true,
       load: [configuration],
     }),
-    TypeOrmModule.forFeature([
-      Counter,
-      MediaCalculatedData,
-      MediaMeasurement,
-      Location,
-    ]),
+    TypeOrmModule.forFeature([Counter, CalculatedData, Measurement, Location]),
     DataPlcModule,
     DataBaseModule,
     DataSyncModule,
