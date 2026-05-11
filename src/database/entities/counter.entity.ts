@@ -8,7 +8,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Location } from './location.entity';
+import { Location } from '../../location/entities/location.entity';
 import { CalculatedData } from './calculated-data.entity';
 import { Measurement } from './measurement.entity';
 import { Calibration } from './calibration.entity';

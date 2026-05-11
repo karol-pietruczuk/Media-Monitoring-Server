@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DataBaseService } from './database/database.service';
-import { CreateLocationDto } from './database/dto/create-location.dto';
 
 @Controller()
 export class AppController {
@@ -15,8 +14,8 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Post()
-  async TESTCreateLocation(@Body() createLocationDto: CreateLocationDto) {
-    return await this.dataBaseService.createLocation(createLocationDto);
-  }
+  // @Post()
+  // async TESTCreateLocation(@Body() createLocationDto: CreateLocationDto) {
+  //   return await this.dataBaseService.createLocation(createLocationDto);
+  // }
 }
