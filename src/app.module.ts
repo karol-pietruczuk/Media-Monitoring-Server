@@ -3,12 +3,13 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DataPlcModule } from './data-plc/data-plc.module';
-import { DataBaseModule } from './database/database.module';
-import { DataSyncModule } from './data-sync/data-sync.module';
-import { DataBaseService } from './database/database.service';
-import { LocationModule } from './location/location.module';
-import { LocationService } from './location/location.service';
+import { DataBaseModule } from './infrastructure/database/database.module';
+import { DataSyncModule } from './feature/data-sync/data-sync.module';
+import { DataBaseService } from './infrastructure/database/database.service';
+import { LocationModule } from './domain/location/location.module';
+import { LocationService } from './domain/location/location.service';
+import { MeterModule } from './domain/meter/meter.module';
+import { PulseDataModule } from './domain/pulse-data/pulse-data.module';
 
 @Module({
   imports: [
@@ -16,10 +17,11 @@ import { LocationService } from './location/location.service';
       isGlobal: true,
       load: [configuration],
     }),
-    DataPlcModule,
-    DataBaseModule,
-    DataSyncModule,
     LocationModule,
+    MeterModule,
+    PulseDataModule,
+    DataSyncModule,
+    DataBaseModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataBaseService, LocationService],

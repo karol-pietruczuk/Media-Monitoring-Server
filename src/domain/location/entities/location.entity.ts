@@ -5,7 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from '../../database/entities/counter.entity';
+import { Meter } from '../../meter/entities/meter.entity';
 
 @Index('PK_LOCATION', ['id'], { unique: true })
 @Entity('location', { schema: 'dbo' })
@@ -26,6 +26,6 @@ export class Location {
   })
   createdAt!: Date;
 
-  @OneToMany(() => Counter, (counter) => counter.location)
-  counter!: Counter[];
+  @OneToMany(() => Meter, (meter) => meter.location)
+  meter!: Meter[];
 }

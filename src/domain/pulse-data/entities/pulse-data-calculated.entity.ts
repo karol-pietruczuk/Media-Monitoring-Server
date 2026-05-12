@@ -6,12 +6,12 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from './counter.entity';
+import { Meter } from '../../meter/entities/meter.entity';
 
-@Index('PK_CALCULATED_DATA', ['id'], { unique: true })
-@Index('UQ__CALCULATED_DATA_COUNTER_ID', ['counterId'], { unique: true })
-@Entity('calculatedData', { schema: 'dbo' })
-export class CalculatedData {
+@Index('PK_PULSE_DATA_CALCULATED', ['id'], { unique: true })
+@Index('UQ__PULSE_DATA_CALCULATED_METER_ID', ['meterId'], { unique: true })
+@Entity('pulseDataCalculated', { schema: 'dbo' })
+export class PulseDataCalculated {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
@@ -24,8 +24,8 @@ export class CalculatedData {
   @Column('datetime', { name: 'actualTimestamp', default: () => 'getdate()' })
   actualTimestamp!: Date;
 
-  @Column('int', { name: 'counterId', unique: true })
-  counterId!: number;
+  @Column('int', { name: 'meterId', unique: true })
+  meterId!: number;
 
   @Column('datetime', {
     name: 'createdAt',
@@ -34,7 +34,7 @@ export class CalculatedData {
   })
   createdAt!: Date;
 
-  @OneToOne(() => Counter, (counter) => counter.calculatedData)
-  @JoinColumn([{ name: 'counterId', referencedColumnName: 'id' }])
-  counter!: Counter;
+  @OneToOne(() => Meter, (meter) => meter.pulseDataCalculated)
+  @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
+  meter!: Meter;
 }

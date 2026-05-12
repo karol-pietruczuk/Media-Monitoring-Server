@@ -3,6 +3,6 @@ export type MultiplierHistoryChange =
   | 'Changed value'
   | 'Changed expirationDateFrom'
   | 'Changed expirationDateUntil'
-  | 'Changed CreatedAt'
-  | 'Changed Counter'
-  | 'Changed Several Values';
+  | 'Changed createdAt'
+  | 'Changed meter'
+  | 'Changed several Values';

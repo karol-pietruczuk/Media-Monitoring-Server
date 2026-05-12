@@ -7,12 +7,12 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from './counter.entity';
-import { MultiplierHistory } from './multiplier-history.entity';
+import { Meter } from '../../meter/entities/meter.entity';
+import { PulseDataMultiplierHistory } from './pulse-data-multiplier-history.entity';
 
-@Index('PK_MULTIPLIER', ['id'], { unique: true })
-@Entity('multiplier', { schema: 'dbo' })
-export class Multiplier {
+@Index('PK_PULSE_DATA_MULTIPLIER', ['id'], { unique: true })
+@Entity('pulseDataMultiplier', { schema: 'dbo' })
+export class PulseDataMultiplier {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
@@ -37,13 +37,14 @@ export class Multiplier {
   })
   createdAt!: Date;
 
-  @ManyToOne(() => Counter, (counter) => counter.multiplier)
-  @JoinColumn([{ name: 'counterId', referencedColumnName: 'id' }])
-  counter!: Counter;
+  @ManyToOne(() => Meter, (meter) => meter.pulseDataMultiplier)
+  @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
+  meter!: Meter;
 
   @OneToMany(
-    () => MultiplierHistory,
-    (multiplierHistory) => multiplierHistory.multiplier,
+    () => PulseDataMultiplierHistory,
+    (pulseDataMultiplierHistory) =>
+      pulseDataMultiplierHistory.pulseDataMultiplier,
   )
-  multiplierHistory!: MultiplierHistory[];
+  pulseDataMultiplierHistory!: PulseDataMultiplierHistory[];
 }

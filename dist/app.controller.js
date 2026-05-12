@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
-const database_service_1 = require("./database/database.service");
-const create_location_dto_1 = require("./location/dto/create-location.dto");
-const location_service_1 = require("./location/location.service");
+const database_service_1 = require("./infrastructure/database/database.service");
+const create_location_dto_1 = require("./domain/location/dto/create-location.dto");
+const location_service_1 = require("./domain/location/location.service");
 let AppController = class AppController {
     appService;
     dataBaseService;
