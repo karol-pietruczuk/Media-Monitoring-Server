@@ -6,11 +6,11 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Counter } from './counter.entity';
+import { Meter } from './meter.entity';
 
 @Index('PK_CALIBRATION', ['id'], { unique: true })
 @Entity('calibration', { schema: 'dbo' })
-export class Calibration {
+export class MeterCalibration {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
@@ -28,7 +28,7 @@ export class Calibration {
   })
   createdAt!: Date;
 
-  @ManyToOne(() => Counter, (counter) => counter.calibration)
-  @JoinColumn([{ name: 'counterId', referencedColumnName: 'id' }])
-  counter!: Counter;
+  @ManyToOne(() => Meter, (meter) => meter.meterCalibration)
+  @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
+  meter!: Meter;
 }

@@ -15,12 +15,13 @@ const config_1 = require("@nestjs/config");
 const configuration_1 = __importDefault(require("./config/configuration"));
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
-const data_plc_module_1 = require("./data-plc/data-plc.module");
-const database_module_1 = require("./database/database.module");
-const data_sync_module_1 = require("./data-sync/data-sync.module");
-const database_service_1 = require("./database/database.service");
-const location_module_1 = require("./location/location.module");
-const location_service_1 = require("./location/location.service");
+const database_module_1 = require("./infrastructure/database/database.module");
+const data_sync_module_1 = require("./feature/data-sync/data-sync.module");
+const database_service_1 = require("./infrastructure/database/database.service");
+const location_module_1 = require("./domain/location/location.module");
+const location_service_1 = require("./domain/location/location.service");
+const meter_module_1 = require("./domain/meter/meter.module");
+const pulse_data_module_1 = require("./domain/pulse-data/pulse-data.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -31,10 +32,11 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 load: [configuration_1.default],
             }),
-            data_plc_module_1.DataPlcModule,
-            database_module_1.DataBaseModule,
-            data_sync_module_1.DataSyncModule,
             location_module_1.LocationModule,
+            meter_module_1.MeterModule,
+            pulse_data_module_1.PulseDataModule,
+            data_sync_module_1.DataSyncModule,
+            database_module_1.DataBaseModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],

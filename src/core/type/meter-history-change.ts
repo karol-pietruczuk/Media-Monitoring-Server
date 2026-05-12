@@ -1,5 +1,5 @@
-export type CounterHistoryChange =
-  | 'Created counter'
+export type MeterHistoryChange =
+  | 'Created meter'
   | 'Changed name'
   | 'Changed symbol'
   | 'Changed unit'
