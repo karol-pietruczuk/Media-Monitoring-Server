@@ -8,7 +8,7 @@ export const dataSourceOptions: DataSourceOptions = {
   username: 'Node_User',
   password: '123',
   database: 'Test',
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../../**/**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   logging: true,
   migrationsRun: true,
@@ -21,5 +21,5 @@ export const dataSourceOptions: DataSourceOptions = {
 const AppDataSource = new DataSource(dataSourceOptions);
 
 export default AppDataSource;
-//npm run migration:generate -- src/database/infrastructure/migrations/Init
+//npm run migration:generate -- src/infrastructure/database/migrations/Init
 //npm run migration:run
