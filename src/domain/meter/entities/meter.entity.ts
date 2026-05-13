@@ -12,7 +12,6 @@ import { Unit } from '../../../core/type/unit';
 import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
 import { MeterCalibration } from './meter-calibration.entity';
 import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';
-import { MeterHistory } from './meter-history.entity';
 import { Location } from '../../location/entities/location.entity';
 import { PulseDataMeasurement } from '../../pulse-data/entities/pulse-data-measurement.entity';
 import { PulseDataMultiplierHistory } from '../../pulse-data/entities/pulse-data-multiplier-history.entity';
@@ -78,9 +77,6 @@ export class Meter {
     (pulseDataMultiplierHistory) => pulseDataMultiplierHistory.meter,
   )
   pulseDataMultiplierHistory!: PulseDataMultiplierHistory[];
-
-  @OneToMany(() => MeterHistory, (meterHistory) => meterHistory.meter)
-  meterHistory!: MeterHistory[];
 
   @OneToOne(
     () => PulseDataChannel,

@@ -1,48 +1,12 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { Location } from '../../location/entities/location.entity';
-import { MeterCalibration } from './meter-calibration.entity';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { Unit } from '../../../core/type/unit';
-import { Meter } from './meter.entity';
-import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
 import type { MeterHistoryChangeType } from '../../../core/type/meter-history-change';
-import { PulseDataMeasurement } from '../../pulse-data/entities/pulse-data-measurement.entity';
-import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';
-import { PulseDataMultiplierHistory } from '../../pulse-data/entities/pulse-data-multiplier-history.entity';
 
 @Index('PK_METER_HISTORY', ['id'], { unique: true })
 @Entity('meterHistory', { schema: 'dbo' })
 export class MeterHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
-
-  @Column('nvarchar', { name: 'name', length: 50 })
-  name!: string;
-
-  @Column('nvarchar', { name: 'symbol', length: 50 })
-  symbol!: string;
-
-  @Column({
-    type: 'nvarchar',
-    name: 'unit',
-    default: Unit.cubicMeter,
-    length: 30,
-  })
-  unit!: Unit;
-
-  @Column('datetime', {
-    name: 'createdAt',
-    default: () => 'getdate()',
-  })
-  createdAt!: Date;
 
   @Column({
     type: 'nvarchar',
@@ -51,38 +15,34 @@ export class MeterHistory {
   })
   meterHistoryChange!: MeterHistoryChangeType;
 
-  @ManyToOne(() => Location, (location) => location.meter)
-  @JoinColumn([{ name: 'locationId', referencedColumnName: 'id' }])
-  location!: Location;
+  @Column({ type: 'int', name: 'meterId' })
+  meterId!: number;
 
-  @OneToOne(() => PulseDataCalculated, (calculatedData) => calculatedData.meter)
-  calculatedData!: PulseDataCalculated;
+  @Column('nvarchar', { name: 'meterName', length: 50 })
+  meterName!: string;
 
-  @OneToMany(
-    () => PulseDataMeasurement,
-    (pulseDataMeasurement) => pulseDataMeasurement.meter,
-  )
-  pulseDataMeasurement!: PulseDataMeasurement[];
+  @Column('nvarchar', { name: 'meterSymbol', length: 50 })
+  meterSymbol!: string;
 
-  @OneToMany(
-    () => MeterCalibration,
-    (meterCalibration) => meterCalibration.meter,
-  )
-  meterCalibration!: MeterCalibration[];
+  @Column({
+    type: 'nvarchar',
+    name: 'meterUnit',
+    default: Unit.cubicMeter,
+    length: 30,
+  })
+  meterUnit!: Unit;
 
-  @OneToMany(
-    () => PulseDataMultiplier,
-    (pulseDataMultiplier) => pulseDataMultiplier.meter,
-  )
-  pulseDataMultiplier!: PulseDataMultiplier[];
+  @Column({ type: 'int', name: 'meterLocationId' })
+  meterLocationId!: number;
 
-  @OneToMany(
-    () => PulseDataMultiplierHistory,
-    (pulseDataMultiplierHistory) => pulseDataMultiplierHistory.meter,
-  )
-  pulseDataMultiplierHistory!: PulseDataMultiplierHistory[];
+  @Column('datetime', {
+    name: 'meterCreatedAt',
+  })
+  meterCreatedAt!: Date;
 
-  @ManyToOne(() => Meter, (meter) => meter.meterHistory)
-  @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
-  meter!: Meter;
+  @Column('datetime', {
+    name: 'createdAt',
+    default: () => 'getdate()',
+  })
+  createdAt!: Date;
 }
