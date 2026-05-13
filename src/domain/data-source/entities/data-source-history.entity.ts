@@ -4,12 +4,9 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { DataSourceProtocol } from '../../../core/type/data-source-protocol';
-import { PulseDataChannel } from '../../pulse-data/entities/pulse-data-channel.entity';
-import { TotalDataChannel } from '../../total-data/entities/total-data-channel.entity';
 import { DataSource } from './data-source.entity';
 import type { DataSourceHistoryChangetype } from '../../../core/type/data-source-history-change';
 
