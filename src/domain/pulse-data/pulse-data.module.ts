@@ -4,6 +4,8 @@ import { PulseDataCalculated } from './entities/pulse-data-calculated.entity';
 import { PulseDataMeasurement } from './entities/pulse-data-measurement.entity';
 import { PulseDataMultiplier } from './entities/pulse-data-multiplier.entity';
 import { PulseDataMultiplierHistory } from './entities/pulse-data-multiplier-history.entity';
+import { PulseDataChannel } from './entities/pulse-data-channel.entity';
+import { PulseDataChannelHistory } from './entities/pulse-data-channel-history.entity';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { PulseDataMultiplierHistory } from './entities/pulse-data-multiplier-his
       PulseDataMeasurement,
       PulseDataMultiplier,
       PulseDataMultiplierHistory,
+      PulseDataChannel,
+      PulseDataChannelHistory,
     ]),
   ],
   providers: [],

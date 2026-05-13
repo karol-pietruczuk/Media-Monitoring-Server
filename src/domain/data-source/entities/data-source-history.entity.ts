@@ -11,7 +11,7 @@ import type { DataSourceProtocol } from '../../../core/type/data-source-protocol
 import { PulseDataChannel } from '../../pulse-data/entities/pulse-data-channel.entity';
 import { TotalDataChannel } from '../../total-data/entities/total-data-channel.entity';
 import { DataSource } from './data-source.entity';
-import type { DataSourceHistoryChange } from '../../../core/type/data-source-history-change';
+import type { DataSourceHistoryChangetype } from '../../../core/type/data-source-history-change';
 
 @Index('PK_DATA_SOURCE_HISTORY', ['id'], { unique: true })
 @Entity('dataSourceHistory', { schema: 'dbo' })
@@ -30,7 +30,7 @@ export class DataSourceHistory {
     name: 'datasourceChange',
     length: 30,
   })
-  datasourceChange!: DataSourceHistoryChange;
+  datasourceChange!: DataSourceHistoryChangetype;
 
   @Column('datetime', {
     name: 'createdAt',

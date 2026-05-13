@@ -13,7 +13,7 @@ import { MeterCalibration } from './meter-calibration.entity';
 import { Unit } from '../../../core/type/unit';
 import { Meter } from './meter.entity';
 import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
-import type { MeterHistoryChange } from '../../../core/type/meter-history-change';
+import type { MeterHistoryChangeType } from '../../../core/type/meter-history-change';
 import { PulseDataMeasurement } from '../../pulse-data/entities/pulse-data-measurement.entity';
 import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';
 import { PulseDataMultiplierHistory } from '../../pulse-data/entities/pulse-data-multiplier-history.entity';
@@ -49,7 +49,7 @@ export class MeterHistory {
     name: 'meterHistoryChange',
     length: 30,
   })
-  meterHistoryChange!: MeterHistoryChange;
+  meterHistoryChange!: MeterHistoryChangeType;
 
   @ManyToOne(() => Location, (location) => location.meter)
   @JoinColumn([{ name: 'locationId', referencedColumnName: 'id' }])
