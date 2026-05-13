@@ -39,17 +39,11 @@ export class DataSourceHistory {
   })
   createdAt!: Date;
 
-  @OneToMany(
-    () => PulseDataChannel,
-    (pulseDataChannel) => pulseDataChannel.dataSource,
-  )
-  pulseDataChannel!: PulseDataChannel[];
+  @Column({ type: 'int', name: 'pulseDataChannelId' })
+  pulseDataChannelId!: number;
 
-  @OneToMany(
-    () => TotalDataChannel,
-    (totalDataChannel) => totalDataChannel.dataSource,
-  )
-  totalDataChannel!: TotalDataChannel[];
+  @Column({ type: 'int', name: 'totalDataChannelId' })
+  totalDataChannelId!: number;
 
   @ManyToOne(() => DataSource, (dataSource) => dataSource.dataSourceHistory)
   @JoinColumn([{ name: 'dataSourceId', referencedColumnName: 'id' }])
