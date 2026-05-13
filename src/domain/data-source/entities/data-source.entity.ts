@@ -15,7 +15,7 @@ export class DataSource {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column('nvarchar', { name: 'symbol', length: 30 })
+  @Column('nvarchar', { name: 'protocol', length: 30 })
   protocol!: DataSourceProtocol;
 
   @Column('nvarchar', { name: 'connectionInfo', length: 120 })
@@ -23,7 +23,6 @@ export class DataSource {
 
   @Column('datetime', {
     name: 'createdAt',
-    unique: true,
     default: () => 'getdate()',
   })
   createdAt!: Date;

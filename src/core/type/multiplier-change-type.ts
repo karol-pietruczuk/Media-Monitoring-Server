@@ -1,4 +1,4 @@
-export type MultiplierHistoryChangeType =
+export type MultiplierChangeType =
   | 'Created multiplier'
   | 'Changed value'
   | 'Changed expirationDateFrom'

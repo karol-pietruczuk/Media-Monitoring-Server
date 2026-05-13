@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import type { MultiplierHistoryChangeType } from '../../../core/type/multiplier-history-change';
+import type { MultiplierChangeType } from '../../../core/type/multiplier-change-type';
 import { Meter } from '../../meter/entities/meter.entity';
 import { PulseDataMultiplier } from './pulse-data-multiplier.entity';
 
@@ -46,7 +46,7 @@ export class PulseDataMultiplierHistory {
     name: 'multiplierHistoryChange',
     length: 30,
   })
-  multiplierHistoryChange!: MultiplierHistoryChangeType;
+  multiplierHistoryChange!: MultiplierChangeType;
 
   @ManyToOne(() => Meter, (meter) => meter.pulseDataMultiplierHistory)
   @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])

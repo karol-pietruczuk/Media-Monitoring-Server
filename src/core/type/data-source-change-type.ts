@@ -1,4 +1,4 @@
-export type DataSourceHistoryChangetype =
+export type DataSourceChangetype =
   | 'Created dataSource'
   | 'Changed protocol'
   | 'Changed connectionInfo'
