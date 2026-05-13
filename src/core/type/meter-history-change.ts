@@ -1,4 +1,4 @@
-export type MeterHistoryChange =
+export type MeterHistoryChangeType =
   | 'Created meter'
   | 'Changed name'
   | 'Changed symbol'
