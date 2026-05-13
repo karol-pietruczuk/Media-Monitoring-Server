@@ -4,4 +4,5 @@ export type MeterHistoryChange =
   | 'Changed symbol'
   | 'Changed unit'
   | 'Changed location'
-  | 'Changed calculatedData';
+  | 'Changed calculatedData'
+  | 'Changed several Values';
