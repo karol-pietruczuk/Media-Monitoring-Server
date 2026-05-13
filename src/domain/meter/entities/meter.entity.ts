@@ -33,7 +33,6 @@ export class Meter {
 
   @Column({
     type: 'nvarchar',
-    enum: Unit,
     name: 'unit',
     default: Unit.cubicMeter,
     length: 30,

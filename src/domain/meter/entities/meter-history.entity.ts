@@ -31,8 +31,7 @@ export class MeterHistory {
   symbol!: string;
 
   @Column({
-    type: 'simple-enum',
-    enum: Unit,
+    type: 'nvarchar',
     name: 'unit',
     default: Unit.cubicMeter,
     length: 30,
