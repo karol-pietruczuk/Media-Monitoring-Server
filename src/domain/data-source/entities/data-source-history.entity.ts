@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import type { DataSourceProtocol } from '../../../core/type/data-source-protocol';
-import type { DataSourceHistoryChangetype } from '../../../core/type/data-source-history-change';
+import type { DataSourceChangetype } from '../../../core/type/data-source-change-type';
 
 @Index('PK_DATA_SOURCE_HISTORY', ['id'], { unique: true })
 @Entity('dataSourceHistory', { schema: 'dbo' })
@@ -13,7 +13,7 @@ export class DataSourceHistory {
     name: 'dataSourceChange',
     length: 30,
   })
-  dataSourceChange!: DataSourceHistoryChangetype;
+  dataSourceChange!: DataSourceChangetype;
 
   @Column({ type: 'int', name: 'dataSourceId' })
   dataSourceId!: number;

@@ -29,7 +29,6 @@ export class PulseDataMeasurement {
 
   @Column('datetime', {
     name: 'createdAt',
-    unique: true,
     default: () => 'getdate()',
   })
   createdAt!: Date;
