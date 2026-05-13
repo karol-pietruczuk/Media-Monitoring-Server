@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { Meter } from '../../meter/entities/meter.entity';
 
-@Index('PK_MEDIA_PULSE_DATA_MEASUREMENT', ['id'], { unique: true })
-@Index('UQ_MEDIA_PULSE_DATA_MEASUREMENT_TIMESTAMP', ['timestamp'], {
+@Index('PK_PULSE_DATA_MEASUREMENT', ['id'], { unique: true })
+@Index('UQ_PULSE_DATA_MEASUREMENT_TIMESTAMP', ['timestamp'], {
   unique: true,
 })
 @Entity('pulseDataMeasurement', { schema: 'dbo' })

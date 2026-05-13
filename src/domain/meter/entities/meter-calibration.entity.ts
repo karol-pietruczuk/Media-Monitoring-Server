@@ -7,9 +7,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Meter } from './meter.entity';
+import type { MeterCalibrationToCalculateMultiplier } from '../../../core/type/meter-calibration-to-calculate-multiplier';
 
-@Index('PK_CALIBRATION', ['id'], { unique: true })
-@Entity('calibration', { schema: 'dbo' })
+@Index('PK_METER_CALIBRATION', ['id'], { unique: true })
+@Entity('meterCalibration', { schema: 'dbo' })
 export class MeterCalibration {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
@@ -17,7 +18,12 @@ export class MeterCalibration {
   @Column('numeric', { name: 'value', precision: 17, scale: 4 })
   value!: number;
 
-  // dodaj kolumnę CalculateMultiplier: none | start | stop
+  @Column({
+    type: 'nvarchar',
+    name: 'useToCalculateMultiplier',
+    length: 30,
+  })
+  useToCalculateMultiplier!: MeterCalibrationToCalculateMultiplier;
 
   @Column('datetime', { name: 'timestamp', unique: true })
   timestamp!: Date;
