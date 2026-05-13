@@ -1,13 +1,5 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import type { DataSourceProtocol } from '../../../core/type/data-source-protocol';
-import { DataSource } from './data-source.entity';
 import type { DataSourceHistoryChangetype } from '../../../core/type/data-source-history-change';
 
 @Index('PK_DATA_SOURCE_HISTORY', ['id'], { unique: true })
@@ -16,33 +8,30 @@ export class DataSourceHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column('nvarchar', { name: 'symbol', length: 30 })
-  protocol!: DataSourceProtocol;
-
-  @Column('nvarchar', { name: 'connectionInfo', length: 120 })
-  connectionInfo!: string;
-
   @Column({
     type: 'nvarchar',
-    name: 'datasourceChange',
+    name: 'dataSourceChange',
     length: 30,
   })
-  datasourceChange!: DataSourceHistoryChangetype;
+  dataSourceChange!: DataSourceHistoryChangetype;
+
+  @Column({ type: 'int', name: 'dataSourceId' })
+  dataSourceId!: number;
+
+  @Column('nvarchar', { name: 'dataSourceProtocol', length: 30 })
+  dataSourceProtocol!: DataSourceProtocol;
+
+  @Column('nvarchar', { name: 'dataSourceConnectionInfo', length: 120 })
+  dataSourceConnectionInfo!: string;
+
+  @Column('datetime', {
+    name: 'dataSourcCreatedAt',
+  })
+  dataSourcCreatedAt!: Date;
 
   @Column('datetime', {
     name: 'createdAt',
-    unique: true,
     default: () => 'getdate()',
   })
   createdAt!: Date;
-
-  @Column({ type: 'int', name: 'pulseDataChannelId' })
-  pulseDataChannelId!: number;
-
-  @Column({ type: 'int', name: 'totalDataChannelId' })
-  totalDataChannelId!: number;
-
-  @ManyToOne(() => DataSource, (dataSource) => dataSource.dataSourceHistory)
-  @JoinColumn([{ name: 'dataSourceId', referencedColumnName: 'id' }])
-  dataSource!: DataSource;
 }
