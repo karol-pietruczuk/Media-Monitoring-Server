@@ -16,12 +16,11 @@ export class TotalDataChannel {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column('nvarchar', { name: 'symbol', length: 120 })
+  @Column('nvarchar', { name: 'dataMappingInfo', length: 120 })
   dataMappingInfo!: string;
 
   @Column('datetime', {
     name: 'createdAt',
-    unique: true,
     default: () => 'getdate()',
   })
   createdAt!: Date;

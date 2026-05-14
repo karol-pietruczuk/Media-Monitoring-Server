@@ -9,20 +9,16 @@ import {
 import { Meter } from '../../meter/entities/meter.entity';
 
 @Index('PK_PULSE_DATA_MEASUREMENT', ['id'], { unique: true })
-@Index('UQ_PULSE_DATA_MEASUREMENT_TIMESTAMP', ['timestamp'], {
-  unique: true,
-})
 @Entity('pulseDataMeasurement', { schema: 'dbo' })
 export class PulseDataMeasurement {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column('int', { name: 'meterPulses' })
+  @Column('int', { name: 'pulses' })
   pulses!: number;
 
   @Column('datetime', {
     name: 'timestamp',
-    unique: true,
     default: () => 'getdate()',
   })
   timestamp!: Date;
