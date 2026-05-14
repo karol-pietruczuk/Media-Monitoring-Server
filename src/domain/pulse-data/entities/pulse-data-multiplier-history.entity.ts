@@ -1,14 +1,5 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import type { MultiplierChangeType } from '../../../core/type/multiplier-change-type';
-import { Meter } from '../../meter/entities/meter.entity';
-import { PulseDataMultiplier } from './pulse-data-multiplier.entity';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import type { PulseDataMultiplierChangeType } from '../../../core/type/pulse-data-multiplier-change.entity';
 
 @Index('PK_PULSE_DATA_MULTIPLIER_HISTORY', ['id'], { unique: true })
 @Entity('pulseDataMultiplierHistory', { schema: 'dbo' })
@@ -16,46 +7,46 @@ export class PulseDataMultiplierHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
+  @Column({
+    type: 'nvarchar',
+    name: 'pulseDataMultiplierHistoryChange',
+    length: 30,
+  })
+  pulseDataMultiplierHistoryChange!: PulseDataMultiplierChangeType;
+
+  @Column({ type: 'int', name: 'pulseDataMultiplierId' })
+  pulseDataMultiplierId!: number;
+
   @Column('numeric', {
-    name: 'multiplier',
+    name: 'pulseDataMultiplierValue',
     precision: 15,
     scale: 10,
   })
-  value!: number;
+  pulseDataMultiplierValue!: number;
 
   @Column('datetime', {
-    name: 'expirationDateFrom',
+    name: 'pulseDataMultiplierExpirationDateFrom',
     nullable: false,
   })
-  expirationDateFrom!: Date;
+  pulseDataMultiplierExpirationDateFrom!: Date;
 
   @Column('datetime', {
-    name: 'expirationDateUntil',
+    name: 'pulseDataExpirationDateUntil',
     nullable: true,
   })
-  expirationDateUntil!: Date;
+  pulseDataExpirationDateUntil!: Date;
+
+  @Column('datetime', {
+    name: 'pulseDataMultiplierCreatedAt',
+  })
+  pulseDataMultiplierCreatedAt!: Date;
+
+  @Column({ type: 'int', name: 'pulseDataMeterId' })
+  pulseDataMeterId!: number;
 
   @Column('datetime', {
     name: 'createdAt',
     default: () => 'getdate()',
   })
   createdAt!: Date;
-
-  @Column({
-    type: 'nvarchar',
-    name: 'multiplierHistoryChange',
-    length: 30,
-  })
-  multiplierHistoryChange!: MultiplierChangeType;
-
-  @ManyToOne(() => Meter, (meter) => meter.pulseDataMultiplierHistory)
-  @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
-  meter!: Meter;
-
-  @ManyToOne(
-    () => PulseDataMultiplier,
-    (pulseDataMultiplier) => pulseDataMultiplier.pulseDataMultiplierHistory,
-  )
-  @JoinColumn([{ name: 'multiplierId', referencedColumnName: 'id' }])
-  pulseDataMultiplier!: PulseDataMultiplier;
 }

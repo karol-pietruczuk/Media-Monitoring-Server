@@ -1,8 +1,8 @@
-export type MultiplierChangeType =
-  | 'Created multiplier'
+export type PulseDataMultiplierChangeType =
+  | 'Created Multiplier'
   | 'Changed value'
   | 'Changed expirationDateFrom'
   | 'Changed expirationDateUntil'
-  | 'Changed createdAt'
   | 'Changed meter'
+  | 'Changed createdAt'
   | 'Changed several Values';
