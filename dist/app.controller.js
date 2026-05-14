@@ -18,16 +18,31 @@ const app_service_1 = require("./app.service");
 const database_service_1 = require("./infrastructure/database/database.service");
 const create_location_dto_1 = require("./domain/location/dto/create-location.dto");
 const location_service_1 = require("./domain/location/location.service");
+const opcua_service_1 = require("./infrastructure/opcua/opcua.service");
 let AppController = class AppController {
     appService;
     dataBaseService;
     locationService;
-    constructor(appService, dataBaseService, locationService) {
+    opcUaService;
+    constructor(appService, dataBaseService, locationService, opcUaService) {
         this.appService = appService;
         this.dataBaseService = dataBaseService;
         this.locationService = locationService;
+        this.opcUaService = opcUaService;
     }
-    getHello() {
+    async getHello() {
+        const connectionJson = {
+            endpointUrl: 'opc.tcp://192.168.92.101:4840',
+            securityMode: 'SignAndEncrypt',
+            securityPolicy: 'Basic256Sha256',
+            username: 'test',
+            password: 'Wipasz123!@#',
+        };
+        const mappingJson = {
+            nodeId: 'ns=3;s="DB_Pulse_Counters_Database"."Counters"."Counters_DB"',
+        };
+        const value = await this.opcUaService.readPulseValue(connectionJson, mappingJson);
+        console.log(value);
         return this.appService.getHello();
     }
     async TESTCreateLocation(createLocationDto) {
@@ -39,7 +54,7 @@ __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", String)
+    __metadata("design:returntype", Promise)
 ], AppController.prototype, "getHello", null);
 __decorate([
     (0, common_1.Post)(),
@@ -52,6 +67,7 @@ exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
     __metadata("design:paramtypes", [app_service_1.AppService,
         database_service_1.DataBaseService,
-        location_service_1.LocationService])
+        location_service_1.LocationService,
+        opcua_service_1.OpcUaService])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map
