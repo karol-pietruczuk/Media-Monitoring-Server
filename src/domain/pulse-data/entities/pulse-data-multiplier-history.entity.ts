@@ -44,6 +44,12 @@ export class PulseDataMultiplierHistory {
   @Column({ type: 'int', name: 'pulseDataMeterId' })
   pulseDataMeterId!: number;
 
+  @Column({ type: 'int', name: 'meterCalibrationStartId' })
+  meterCalibrationStartId!: number;
+
+  @Column({ type: 'int', name: 'meterCalibrationStopId' })
+  meterCalibrationStopId!: number;
+
   @Column('datetime', {
     name: 'createdAt',
     default: () => 'getdate()',
