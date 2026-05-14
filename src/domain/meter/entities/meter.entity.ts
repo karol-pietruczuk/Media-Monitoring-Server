@@ -16,6 +16,7 @@ import { Location } from '../../location/entities/location.entity';
 import { PulseDataMeasurement } from '../../pulse-data/entities/pulse-data-measurement.entity';
 import { PulseDataChannel } from '../../pulse-data/entities/pulse-data-channel.entity';
 import { TotalDataChannel } from '../../total-data/entities/total-data-channel.entity';
+import { TotalDataMeasurement } from '../../total-data/entities/total-data-measurement.entity';
 
 @Index('PK_Meter', ['id'], { unique: true })
 @Entity('meter', { schema: 'dbo' })
@@ -82,4 +83,10 @@ export class Meter {
     (totalDataChannel) => totalDataChannel.meter,
   )
   totalDataChannel!: TotalDataChannel;
+
+  @OneToMany(
+    () => TotalDataMeasurement,
+    (totalDatameasurement) => totalDatameasurement.meter,
+  )
+  totalDatameasurement!: TotalDataMeasurement[];
 }
