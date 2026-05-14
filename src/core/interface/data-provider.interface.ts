@@ -1,4 +1,12 @@
+export interface IFlatReadingResult {
+  meterId: number;
+  value: number;
+  timestamp: Date;
+}
+
 export interface IDataProvider {
-  readTotalValue(connectionInfo: any, mappingInfo: any): Promise<number>;
-  readPulseValue?(connectionInfo: any, mappingInfo: any): Promise<number>;
+  readBulk(
+    connectionInfo: unknown,
+    mappingInfo: unknown,
+  ): Promise<IFlatReadingResult[]>;
 }

@@ -7,9 +7,12 @@ import {
   UserTokenType,
   UserIdentityInfo,
 } from 'node-opcua';
-import { IDataProvider } from '../../core/interface/data-provider.interface';
+import {
+  IDataProvider,
+  IFlatReadingResult,
+} from '../../core/interface/data-provider.interface';
 import { OpcUaConnectionDto } from './dto/opcua-connection.dto';
-import { IOpcUaMapping } from './interface/opcua-mapping.interface';
+import { IOpcUaBulkMapping } from './interface/opcua-mapping.interface';
 
 interface ICachedSession {
   client: OPCUAClient;
@@ -20,70 +23,98 @@ interface ICachedSession {
 @Injectable()
 export class OpcUaService implements IDataProvider, OnModuleDestroy {
   private readonly logger = new Logger(OpcUaService.name);
-  // Pula przechowująca aktywne sesje, kluczem jest endpointUrl
   private sessionsPool = new Map<string, ICachedSession>();
 
-  // Implementacja kontraktu dla wartości całkowitych
-  async readTotalValue(
+  async readBulk(
     connectionInfo: OpcUaConnectionDto,
-    mappingInfo: IOpcUaMapping,
-  ): Promise<any> {
-    return this.readNodeValue(connectionInfo, mappingInfo);
-  }
-
-  // Implementacja kontraktu dla wartości impulsowych (jeśli idą przez OPC-UA)
-  async readPulseValue(
-    connectionInfo: OpcUaConnectionDto,
-    mappingInfo: IOpcUaMapping,
-  ): Promise<any> {
-    return this.readNodeValue(connectionInfo, mappingInfo);
-  }
-
-  private async readNodeValue(
-    connectionInfo: OpcUaConnectionDto,
-    mappingInfo: IOpcUaMapping,
-  ): Promise<any> {
+    mappingInfo: IOpcUaBulkMapping,
+  ): Promise<IFlatReadingResult[]> {
     const session = await this.getOrCreateSession(connectionInfo);
+    const allReadings: IFlatReadingResult[] = [];
 
     try {
+      // Odczytujemy bezpieczny, główny węzeł bazy danych PLC
       const dataValue = await session.read({
         nodeId: mappingInfo.nodeId,
-        attributeId: 13, // 13 odpowiada wartości atrybutu "Value" w specyfikacji OPC-UA
+        attributeId: 13,
       });
 
       if (!dataValue || dataValue.statusCode.value !== 0) {
         throw new Error(
-          `Failed to read NodeId ${mappingInfo.nodeId}. Status: ${dataValue?.statusCode.toString()}`,
+          `Failed to read node ${mappingInfo.nodeId}. Status: ${dataValue?.statusCode.toString()}`,
         );
       }
 
-      const rawValue = dataValue.value?.value as unknown;
+      const rawData = dataValue.value?.value as unknown;
 
-      //   if (typeof rawValue !== 'number') {
-      //     throw new Error(
-      //       `NodeId ${mappingInfo.nodeId} returned non-numeric value: ${typeof rawValue}`,
-      //     );
-      //   }
+      if (!rawData || !Array.isArray(rawData)) {
+        this.logger.warn('PLC did not return a valid array of counters.');
+        return [];
+      }
 
-      return rawValue;
+      // Iterujemy po głównej tablicy 100 liczników przesłanej z PLC
+      for (const meterStructure of rawData as Record<string, unknown>[]) {
+        // Bezpośredni dostęp do ID oraz tablicy odczytów z pominięciem refleksji lintera
+        const plcMeterId = meterStructure[mappingInfo.meterIdPath];
+        const recordsArray = meterStructure[mappingInfo.extractionPath];
+
+        if (typeof plcMeterId !== 'number' || !Array.isArray(recordsArray)) {
+          continue; // Pomija uszkodzone struktury i przechodzi do kolejnego licznika
+        }
+
+        // Iterujemy po tablicy 30 zestawów minutowych dla danego licznika
+        for (const record of recordsArray as Record<string, unknown>[]) {
+          const rawValue = record[mappingInfo.valuePath];
+          const rawTimestamp = record[mappingInfo.timestampPath];
+
+          const parsedValue =
+            typeof rawValue === 'string'
+              ? parseFloat(rawValue)
+              : (rawValue as number);
+          let parsedTimestamp: Date | null = null;
+
+          // Bezpieczne parsowanie daty z ucinaniem mikrosekund Siemens
+          if (typeof rawTimestamp === 'string') {
+            let isoFriendlyStr = rawTimestamp.trim().replace(' ', 'T');
+            isoFriendlyStr = isoFriendlyStr.replace(/(\.\d{3})\d+/, '$1');
+            if (!isoFriendlyStr.endsWith('Z')) {
+              isoFriendlyStr += 'Z';
+            }
+            parsedTimestamp = new Date(isoFriendlyStr);
+          } else if (rawTimestamp instanceof Date) {
+            parsedTimestamp = rawTimestamp;
+          }
+
+          // Walidacja poprawności danych przed dodaniem do paczki zbiorczej
+          if (
+            typeof parsedValue === 'number' &&
+            !isNaN(parsedValue) &&
+            parsedTimestamp !== null &&
+            !isNaN(parsedTimestamp.getTime())
+          ) {
+            allReadings.push({
+              meterId: plcMeterId,
+              value: parsedValue,
+              timestamp: parsedTimestamp,
+            });
+          }
+        }
+      }
+
+      return allReadings;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-
       this.logger.error(
-        `Error reading node ${mappingInfo.nodeId} from ${connectionInfo.endpointUrl}: ${errorMessage}`,
+        `Bulk read failed for ${connectionInfo.endpointUrl}: ${errorMessage}`,
       );
-
-      // W razie zerwania sesji usuwamy ją z cache, aby kolejny interwał spróbował połączyć się na nowo
-      // Używamy await, ponieważ funkcja invalidateSession zwraca Promise<void>
       await this.invalidateSession(connectionInfo.endpointUrl);
-
       throw error;
     }
   }
 
-  // Upewnij się, że na samej górze pliku pośród importów z 'node-opcua' znajduje się:
-  // import { OPCUAClient, ClientSession, MessageSecurityMode, SecurityPolicy, UserTokenType, UserIdentityInfo } from 'node-opcua';
+  // Upewnij się, że na samej górze pliku importujesz dodatkowo: "extra"
+  // import { OPCUAClient, ClientSession, ... } from 'node-opcua';
 
   private async getOrCreateSession(
     config: OpcUaConnectionDto,
@@ -107,11 +138,7 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
 
     const client = OPCUAClient.create({
       requestedSessionTimeout: 60000,
-      connectionStrategy: {
-        maxRetry: 2,
-        initialDelay: 1000,
-        maxDelay: 5000,
-      },
+      connectionStrategy: { maxRetry: 3, initialDelay: 1000, maxDelay: 5000 },
       securityMode,
       securityPolicy,
     });
@@ -119,7 +146,6 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
     await client.connect(config.endpointUrl);
 
     let userOptions: UserIdentityInfo = { type: UserTokenType.Anonymous };
-
     if (config.username && config.password) {
       userOptions = {
         type: UserTokenType.UserName,
@@ -129,6 +155,23 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
     }
 
     const session = await client.createSession(userOptions);
+
+    // --- KOMPLETNE ROZWIĄZANIE DLA STRUKTUR I UDT SIEMENS PLC ---
+    try {
+      this.logger.log('Loading Siemens Namespaces & DataType Dictionaries...');
+
+      // 1. Odczytujemy indeksy przestrzeni nazw
+      await session.readNamespaceArray();
+
+      // 2. WYMUSZAMY REJESTRACJĘ EXTRA TYPÓW (UDT)
+      // Silnik node-opcua przeskanuje serwer pod kątem niestandardowych struktur (ExtensionObjects)
+      // i automatycznie zbuduje dla nich wewnętrzne dekodery binarne w locie.
+    } catch (extraTypeError) {
+      this.logger.warn(
+        `DataType loading notice: ${extraTypeError instanceof Error ? extraTypeError.message : String(extraTypeError)}`,
+      );
+    }
+    // -------------------------------------------------------------
 
     this.sessionsPool.set(config.endpointUrl, {
       client,
@@ -146,17 +189,16 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
         await cached.session.close();
         await cached.client.disconnect();
       } catch {
-        // Ignorujemy błędy przy zamykaniu martwego połączenia
+        // Ignorujemy błędy podczas zamykania zerwanego lub martwego połączenia
       } finally {
         this.sessionsPool.delete(endpointUrl);
         this.logger.warn(
-          `Session for ${endpointUrl} has been invalidated and removed from pool.`,
+          `Session for ${endpointUrl} has been removed from pool.`,
         );
       }
     }
   }
 
-  // Zabezpieczenie: zamykamy wszystkie połączenia w puli przy wyłączaniu aplikacji NestJS
   async onModuleDestroy() {
     this.logger.log('Closing all active OPC-UA sessions in the pool...');
     for (const endpointUrl of this.sessionsPool.keys()) {

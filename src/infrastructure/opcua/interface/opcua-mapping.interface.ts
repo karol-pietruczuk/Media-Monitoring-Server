@@ -1,4 +1,8 @@
-export interface IOpcUaMapping {
-  nodeId: string; // np. "ns=2;s=HalaA.Robot1.StatusBlock"
-  extractionPath?: string; // np. "telemetry.energy.value" lub "data[0]"
+export interface IOpcUaBulkMapping {
+  nodeId: string;
+  meterIdPath: string;
+  extractionPath: string;
+  valuePath: string;
+  timestampPath: string;
+  defaultMeterId?: number; // Opcjonalne pole używane tylko przy odczycie pojedynczych wartości
 }

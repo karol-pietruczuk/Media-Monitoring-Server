@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class Init1778746873892 implements MigrationInterface {
-    name = 'Init1778746873892'
+export class Init1778760705682 implements MigrationInterface {
+    name = 'Init1778760705682'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "totalDataChannelHistory" ("id" int NOT NULL IDENTITY(1,1), "totalDataChannelChangeType" nvarchar(30) NOT NULL, "totalDataChannelId" int NOT NULL, "totalDataChannelDataMappingInfo" nvarchar(120) NOT NULL, "totalDataChannelMeterId" int NOT NULL, "totalDataChannelDataSourceId" int NOT NULL, "totalDataChannelCreatedAt" datetime NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_6d62ae5d4a5b4158342b5b6c472" DEFAULT getdate(), CONSTRAINT "PK_1827bd045643dd05e885b49329a" PRIMARY KEY ("id"))`);
@@ -17,7 +17,11 @@ export class Init1778746873892 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "location" ("id" int NOT NULL IDENTITY(1,1), "mainLocation" nvarchar(50) NOT NULL, "subLocation" nvarchar(50), "createdAt" datetime NOT NULL CONSTRAINT "DF_09dee1a3d42723079bd45577916" DEFAULT getdate(), CONSTRAINT "PK_876d7bdba03c72251ec4c2dc827" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE UNIQUE INDEX "PK_LOCATION" ON "location" ("id") `);
         await queryRunner.query(`CREATE TABLE "pulseDataMeasurement" ("id" int NOT NULL IDENTITY(1,1), "pulses" int NOT NULL, "timestamp" datetime NOT NULL CONSTRAINT "DF_6b2276e47623e9b6f045f61890d" DEFAULT getdate(), "createdAt" datetime NOT NULL CONSTRAINT "DF_456bd2ea7b9e7b487edbbb69bf7" DEFAULT getdate(), "meterId" int, CONSTRAINT "PK_0761eacb870e9339e4da72b97a4" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IX_PULSE_DATA_MEASUREMENT" ON "pulseDataMeasurement" ("timestamp", "meterId") `);
         await queryRunner.query(`CREATE UNIQUE INDEX "PK_PULSE_DATA_MEASUREMENT" ON "pulseDataMeasurement" ("id") `);
+        await queryRunner.query(`CREATE TABLE "totalDataChannel" ("id" int NOT NULL IDENTITY(1,1), "dataMappingInfo" nvarchar(120) NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_64d0ab131e112a937260b9327ea" DEFAULT getdate(), "meterId" int, "dataSourceId" int, CONSTRAINT "PK_766a741c75f32257736dbc49aac" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE UNIQUE INDEX "PK_TOTAL_DATA_CHANNEL" ON "totalDataChannel" ("id") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "REL_8cb1a2ce30f84baf2c03f75211" ON "totalDataChannel" ("meterId") WHERE "meterId" IS NOT NULL`);
         await queryRunner.query(`CREATE TABLE "dataSource" ("id" int NOT NULL IDENTITY(1,1), "protocol" nvarchar(30) NOT NULL, "connectionInfo" nvarchar(120) NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_edf3f07a01e6cceb0a55b0d85e5" DEFAULT getdate(), CONSTRAINT "PK_6d01ae6c0f47baf4f8e37342268" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE UNIQUE INDEX "PK_DATA_SOURCE" ON "dataSource" ("id") `);
         await queryRunner.query(`CREATE TABLE "pulseDataChannel" ("id" int NOT NULL IDENTITY(1,1), "dataMappingInfo" nvarchar(120) NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_f5290628149a0a84edac7932b97" DEFAULT getdate(), "meterId" int, "dataSourceId" int, CONSTRAINT "PK_b8a3f6bfe61f26586b43fed2e9a" PRIMARY KEY ("id"))`);
@@ -25,9 +29,9 @@ export class Init1778746873892 implements MigrationInterface {
         await queryRunner.query(`CREATE UNIQUE INDEX "REL_98d09dc65eb3ef3853a3284853" ON "pulseDataChannel" ("meterId") WHERE "meterId" IS NOT NULL`);
         await queryRunner.query(`CREATE TABLE "meter" ("id" int NOT NULL IDENTITY(1,1), "name" nvarchar(50) NOT NULL, "symbol" nvarchar(50) NOT NULL, "unit" nvarchar(30) NOT NULL CONSTRAINT "DF_bb7d584d202e6a15b269bdffcc9" DEFAULT 'm³', "createdAt" datetime NOT NULL CONSTRAINT "DF_27faa9c3b0db1ee219b04db21ca" DEFAULT getdate(), "locationId" int, CONSTRAINT "PK_6a2a722edc5f966fa3562638f91" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE UNIQUE INDEX "PK_Meter" ON "meter" ("id") `);
-        await queryRunner.query(`CREATE TABLE "totalDataChannel" ("id" int NOT NULL IDENTITY(1,1), "dataMappingInfo" nvarchar(120) NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_64d0ab131e112a937260b9327ea" DEFAULT getdate(), "meterId" int, "dataSourceId" int, CONSTRAINT "PK_766a741c75f32257736dbc49aac" PRIMARY KEY ("id"))`);
-        await queryRunner.query(`CREATE UNIQUE INDEX "PK_TOTAL_DATA_CHANNEL" ON "totalDataChannel" ("id") `);
-        await queryRunner.query(`CREATE UNIQUE INDEX "REL_8cb1a2ce30f84baf2c03f75211" ON "totalDataChannel" ("meterId") WHERE "meterId" IS NOT NULL`);
+        await queryRunner.query(`CREATE TABLE "totalDataMeasurement" ("id" int NOT NULL IDENTITY(1,1), "value" decimal(10,3) NOT NULL, "timestamp" datetime NOT NULL CONSTRAINT "DF_13de08c38aed01d2ed5bd11a1ec" DEFAULT getdate(), "createdAt" datetime NOT NULL CONSTRAINT "DF_20470a2ba1b14677792eaa23e4c" DEFAULT getdate(), "meterId" int, CONSTRAINT "PK_6116e6bd47cc67acabfb439e338" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE INDEX "IX_TOTAL_DATA_MEASUREMENT" ON "totalDataMeasurement" ("timestamp", "meterId") `);
+        await queryRunner.query(`CREATE UNIQUE INDEX "PK_TOTAL_DATA_MEASUREMENT" ON "totalDataMeasurement" ("id") `);
         await queryRunner.query(`CREATE TABLE "pulseDataMultiplierHistory" ("id" int NOT NULL IDENTITY(1,1), "pulseDataMultiplierHistoryChange" nvarchar(30) NOT NULL, "pulseDataMultiplierId" int NOT NULL, "pulseDataMultiplierValue" numeric(15,10) NOT NULL, "pulseDataMultiplierExpirationDateFrom" datetime NOT NULL, "pulseDataExpirationDateUntil" datetime, "pulseDataMultiplierCreatedAt" datetime NOT NULL, "pulseDataMeterId" int NOT NULL, "meterCalibrationStartId" int NOT NULL, "meterCalibrationStopId" int NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_8346f752c62174e2f1caa753bd7" DEFAULT getdate(), CONSTRAINT "PK_15b4b1c36cb9f4204434d663ff0" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE UNIQUE INDEX "PK_PULSE_DATA_MULTIPLIER_HISTORY" ON "pulseDataMultiplierHistory" ("id") `);
         await queryRunner.query(`CREATE TABLE "pulseDataChannelHistory" ("id" int NOT NULL IDENTITY(1,1), "pulseDataChannelChange" nvarchar(30) NOT NULL, "pulseDataChannelId" int NOT NULL, "pulseDataChannelDataMappingInfo" nvarchar(120) NOT NULL, "pulseDataChannelMeterId" int NOT NULL, "pulseDataChannelDataSourceId" int NOT NULL, "pulseDataChannelCreatedAt" datetime NOT NULL, "createdAt" datetime NOT NULL CONSTRAINT "DF_aa8e6dbf84521b0c32ccc2be5ea" DEFAULT getdate(), CONSTRAINT "PK_475a14ec5a8899661ac6068bbfe" PRIMARY KEY ("id"))`);
@@ -46,19 +50,21 @@ export class Init1778746873892 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "pulseDataMultiplier" ADD CONSTRAINT "FK_977086ae2809483df821b2f6e25" FOREIGN KEY ("meterCalibrationStop") REFERENCES "meterCalibration"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "meterCalibration" ADD CONSTRAINT "FK_f9fbc6fa83d8c62d61c8668b964" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pulseDataMeasurement" ADD CONSTRAINT "FK_b0c9b25f862a628225c1bb9d1e3" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "totalDataChannel" ADD CONSTRAINT "FK_8cb1a2ce30f84baf2c03f752111" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "totalDataChannel" ADD CONSTRAINT "FK_2ee405d48aea20d524cccc3c797" FOREIGN KEY ("dataSourceId") REFERENCES "dataSource"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pulseDataChannel" ADD CONSTRAINT "FK_98d09dc65eb3ef3853a32848537" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "pulseDataChannel" ADD CONSTRAINT "FK_ac1ab1c5949bf80cbf4752a0991" FOREIGN KEY ("dataSourceId") REFERENCES "dataSource"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "meter" ADD CONSTRAINT "FK_9136c9541ac9d19a9ec7eead8e4" FOREIGN KEY ("locationId") REFERENCES "location"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "totalDataChannel" ADD CONSTRAINT "FK_8cb1a2ce30f84baf2c03f752111" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "totalDataChannel" ADD CONSTRAINT "FK_2ee405d48aea20d524cccc3c797" FOREIGN KEY ("dataSourceId") REFERENCES "dataSource"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "totalDataMeasurement" ADD CONSTRAINT "FK_db14369a7e4410a0077a6341eab" FOREIGN KEY ("meterId") REFERENCES "meter"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "totalDataChannel" DROP CONSTRAINT "FK_2ee405d48aea20d524cccc3c797"`);
-        await queryRunner.query(`ALTER TABLE "totalDataChannel" DROP CONSTRAINT "FK_8cb1a2ce30f84baf2c03f752111"`);
+        await queryRunner.query(`ALTER TABLE "totalDataMeasurement" DROP CONSTRAINT "FK_db14369a7e4410a0077a6341eab"`);
         await queryRunner.query(`ALTER TABLE "meter" DROP CONSTRAINT "FK_9136c9541ac9d19a9ec7eead8e4"`);
         await queryRunner.query(`ALTER TABLE "pulseDataChannel" DROP CONSTRAINT "FK_ac1ab1c5949bf80cbf4752a0991"`);
         await queryRunner.query(`ALTER TABLE "pulseDataChannel" DROP CONSTRAINT "FK_98d09dc65eb3ef3853a32848537"`);
+        await queryRunner.query(`ALTER TABLE "totalDataChannel" DROP CONSTRAINT "FK_2ee405d48aea20d524cccc3c797"`);
+        await queryRunner.query(`ALTER TABLE "totalDataChannel" DROP CONSTRAINT "FK_8cb1a2ce30f84baf2c03f752111"`);
         await queryRunner.query(`ALTER TABLE "pulseDataMeasurement" DROP CONSTRAINT "FK_b0c9b25f862a628225c1bb9d1e3"`);
         await queryRunner.query(`ALTER TABLE "meterCalibration" DROP CONSTRAINT "FK_f9fbc6fa83d8c62d61c8668b964"`);
         await queryRunner.query(`ALTER TABLE "pulseDataMultiplier" DROP CONSTRAINT "FK_977086ae2809483df821b2f6e25"`);
@@ -77,9 +83,9 @@ export class Init1778746873892 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "pulseDataChannelHistory"`);
         await queryRunner.query(`DROP INDEX "PK_PULSE_DATA_MULTIPLIER_HISTORY" ON "pulseDataMultiplierHistory"`);
         await queryRunner.query(`DROP TABLE "pulseDataMultiplierHistory"`);
-        await queryRunner.query(`DROP INDEX "REL_8cb1a2ce30f84baf2c03f75211" ON "totalDataChannel"`);
-        await queryRunner.query(`DROP INDEX "PK_TOTAL_DATA_CHANNEL" ON "totalDataChannel"`);
-        await queryRunner.query(`DROP TABLE "totalDataChannel"`);
+        await queryRunner.query(`DROP INDEX "PK_TOTAL_DATA_MEASUREMENT" ON "totalDataMeasurement"`);
+        await queryRunner.query(`DROP INDEX "IX_TOTAL_DATA_MEASUREMENT" ON "totalDataMeasurement"`);
+        await queryRunner.query(`DROP TABLE "totalDataMeasurement"`);
         await queryRunner.query(`DROP INDEX "PK_Meter" ON "meter"`);
         await queryRunner.query(`DROP TABLE "meter"`);
         await queryRunner.query(`DROP INDEX "REL_98d09dc65eb3ef3853a3284853" ON "pulseDataChannel"`);
@@ -87,7 +93,11 @@ export class Init1778746873892 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "pulseDataChannel"`);
         await queryRunner.query(`DROP INDEX "PK_DATA_SOURCE" ON "dataSource"`);
         await queryRunner.query(`DROP TABLE "dataSource"`);
+        await queryRunner.query(`DROP INDEX "REL_8cb1a2ce30f84baf2c03f75211" ON "totalDataChannel"`);
+        await queryRunner.query(`DROP INDEX "PK_TOTAL_DATA_CHANNEL" ON "totalDataChannel"`);
+        await queryRunner.query(`DROP TABLE "totalDataChannel"`);
         await queryRunner.query(`DROP INDEX "PK_PULSE_DATA_MEASUREMENT" ON "pulseDataMeasurement"`);
+        await queryRunner.query(`DROP INDEX "IX_PULSE_DATA_MEASUREMENT" ON "pulseDataMeasurement"`);
         await queryRunner.query(`DROP TABLE "pulseDataMeasurement"`);
         await queryRunner.query(`DROP INDEX "PK_LOCATION" ON "location"`);
         await queryRunner.query(`DROP TABLE "location"`);

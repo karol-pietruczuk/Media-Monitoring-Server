@@ -31,18 +31,26 @@ let AppController = class AppController {
         this.opcUaService = opcUaService;
     }
     async getHello() {
-        const connectionJson = {
+        const connection = {
             endpointUrl: 'opc.tcp://192.168.92.101:4840',
             securityMode: 'SignAndEncrypt',
             securityPolicy: 'Basic256Sha256',
             username: 'test',
             password: 'Wipasz123!@#',
         };
-        const mappingJson = {
+        const mapping = {
             nodeId: 'ns=3;s="DB_Pulse_Counters_Database"."Counters"."Counters_DB"',
+            meterIdPath: 'ID',
+            extractionPath: 'pulses_to_write',
+            valuePath: 'pulses',
+            timestampPath: 'timestamp',
         };
-        const value = await this.opcUaService.readPulseValue(connectionJson, mappingJson);
-        console.log(value);
+        console.log('Rozpoczynam masowy odczyt OPC-UA...');
+        const startTime = Date.now();
+        const data = await this.opcUaService.readBulk(connection, mapping);
+        console.log(`Odczyt zakończony w ${Date.now() - startTime}ms.`);
+        console.log(`Pobrano łącznie rekordów: ${data.length}`);
+        console.log({ totalCount: data.length, sampleData: data.slice(0, 5) });
         return this.appService.getHello();
     }
     async TESTCreateLocation(createLocationDto) {
