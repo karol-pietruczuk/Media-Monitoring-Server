@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { PulseDataMultiplierChangeType } from '../../../core/type/pulse-data-multiplier-change.entity';
+import type { PulseDataMultiplierChangeType } from '../../../core/type/pulse-data-multiplier-change-type';
 
 @Index('PK_PULSE_DATA_MULTIPLIER_HISTORY', ['id'], { unique: true })
 @Entity('pulseDataMultiplierHistory', { schema: 'dbo' })
