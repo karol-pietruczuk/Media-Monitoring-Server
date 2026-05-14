@@ -21,7 +21,6 @@ export class Location {
 
   @Column('datetime', {
     name: 'createdAt',
-    unique: true,
     default: () => 'getdate()',
   })
   createdAt!: Date;
