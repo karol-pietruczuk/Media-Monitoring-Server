@@ -4,9 +4,11 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Meter } from './meter.entity';
+import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';
 
 @Index('PK_METER_CALIBRATION', ['id'], { unique: true })
 @Entity('meterCalibration', { schema: 'dbo' })
@@ -29,4 +31,16 @@ export class MeterCalibration {
   @ManyToOne(() => Meter, (meter) => meter.meterCalibration)
   @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
   meter!: Meter;
+
+  @OneToMany(
+    () => PulseDataMultiplier,
+    (pulseDataMultiplier) => pulseDataMultiplier.meterCalibrationStart,
+  )
+  pulseDataMultiplierStart!: PulseDataMultiplier[];
+
+  @OneToMany(
+    () => PulseDataMultiplier,
+    (pulseDataMultiplier) => pulseDataMultiplier.meterCalibrationStop,
+  )
+  pulseDataMultiplierStop!: PulseDataMultiplier[];
 }
