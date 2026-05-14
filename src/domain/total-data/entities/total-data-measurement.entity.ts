@@ -10,6 +10,7 @@ import { Meter } from '../../meter/entities/meter.entity';
 
 @Index('PK_TOTAL_DATA_MEASUREMENT', ['id'], { unique: true })
 @Entity('totalDataMeasurement', { schema: 'dbo' })
+@Index('IX_TOTAL_DATA_MEASUREMENT', ['timestamp', 'meter'])
 export class TotalDataMeasurement {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
