@@ -22,6 +22,9 @@ const location_module_1 = require("./domain/location/location.module");
 const location_service_1 = require("./domain/location/location.service");
 const meter_module_1 = require("./domain/meter/meter.module");
 const pulse_data_module_1 = require("./domain/pulse-data/pulse-data.module");
+const data_source_module_1 = require("./domain/data-source/data-source.module");
+const total_data_module_1 = require("./domain/total-data/total-data.module");
+const opcua_module_1 = require("./infrastructure/opcua/opcua.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -32,11 +35,14 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 load: [configuration_1.default],
             }),
+            data_source_module_1.DataSourceModule,
             location_module_1.LocationModule,
             meter_module_1.MeterModule,
             pulse_data_module_1.PulseDataModule,
+            total_data_module_1.TotalDataModule,
             data_sync_module_1.DataSyncModule,
             database_module_1.DataBaseModule,
+            opcua_module_1.OpcUaModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],

@@ -10,6 +10,9 @@ import { LocationModule } from './domain/location/location.module';
 import { LocationService } from './domain/location/location.service';
 import { MeterModule } from './domain/meter/meter.module';
 import { PulseDataModule } from './domain/pulse-data/pulse-data.module';
+import { DataSourceModule } from './domain/data-source/data-source.module';
+import { TotalDataModule } from './domain/total-data/total-data.module';
+import { OpcUaModule } from './infrastructure/opcua/opcua.module';
 
 @Module({
   imports: [
@@ -17,11 +20,14 @@ import { PulseDataModule } from './domain/pulse-data/pulse-data.module';
       isGlobal: true,
       load: [configuration],
     }),
+    DataSourceModule,
     LocationModule,
     MeterModule,
     PulseDataModule,
+    TotalDataModule,
     DataSyncModule,
     DataBaseModule,
+    OpcUaModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataBaseService, LocationService],
