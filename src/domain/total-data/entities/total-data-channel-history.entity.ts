@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { TotalDataChannelChangeType } from '../../../core/type/total-data-channel-change';
+import type { TotalDataChannelChangeType } from '../../../core/type/total-data-channel-change-type';
 
 @Index('PK_TOTAL_DATA_CHANNEL_HISTORY', ['id'], { unique: true })
 @Entity('totalDataChannelHistory', { schema: 'dbo' })

@@ -5,4 +5,5 @@ export type MeterChangeType =
   | 'Changed unit'
   | 'Changed location'
   | 'Changed calculatedData'
+  | 'Changed createdAt'
   | 'Changed several Values';

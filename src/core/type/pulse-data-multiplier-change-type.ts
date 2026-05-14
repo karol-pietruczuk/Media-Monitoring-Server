@@ -1,5 +1,5 @@
 export type PulseDataMultiplierChangeType =
-  | 'Created multiplier'
+  | 'Created pulseDataMultiplier'
   | 'Changed value'
   | 'Changed expirationDateFrom'
   | 'Changed expirationDateUntil'
