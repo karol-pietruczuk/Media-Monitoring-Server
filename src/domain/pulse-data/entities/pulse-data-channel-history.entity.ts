@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { PulseDataChannelChangeType } from '../../../core/type/pulse-data-channel-change-type';
+import type { PulseDataChannelChangeType } from '../../../core/type/pulse-data-channel-change.type';
 
 @Index('PK_PULSE_DATA_CHANNEL_HISTORY', ['id'], { unique: true })
 @Entity('pulseDataChannelHistory', { schema: 'dbo' })

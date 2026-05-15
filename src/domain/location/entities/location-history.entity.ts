@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { LocationChangetype } from '../../../core/type/location-change-type';
+import type { LocationChangetype } from '../../../core/type/location-change.type';
 
 @Index('PK_LOCATION_HISTORY', ['id'], { unique: true })
 @Entity('locationHistory', { schema: 'dbo' })

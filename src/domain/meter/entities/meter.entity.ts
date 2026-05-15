@@ -8,7 +8,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Unit } from '../../../core/type/unit';
+import { Unit } from '../../../core/enum/unit.enum';
 import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
 import { MeterCalibration } from './meter-calibration.entity';
 import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';

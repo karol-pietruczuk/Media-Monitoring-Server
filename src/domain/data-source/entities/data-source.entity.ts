@@ -5,7 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import type { DataSourceProtocol } from '../../../core/type/data-source-protocol';
+import type { DataSourceProtocol } from '../../../core/type/data-source-protocol.type';
 import { PulseDataChannel } from '../../pulse-data/entities/pulse-data-channel.entity';
 import { TotalDataChannel } from '../../total-data/entities/total-data-channel.entity';
 

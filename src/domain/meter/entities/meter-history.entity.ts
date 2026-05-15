@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { Unit } from '../../../core/type/unit';
-import type { MeterChangeType } from '../../../core/type/meter-change-type';
+import { Unit } from '../../../core/enum/unit.enum';
+import type { MeterChangeType } from '../../../core/type/meter-change.type';
 
 @Index('PK_METER_HISTORY', ['id'], { unique: true })
 @Entity('meterHistory', { schema: 'dbo' })
