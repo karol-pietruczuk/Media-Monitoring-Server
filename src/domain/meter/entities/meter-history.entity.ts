@@ -35,12 +35,12 @@ export class MeterHistory {
   @Column({ type: 'int', name: 'meterLocationId' })
   meterLocationId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'meterCreatedAt',
   })
   meterCreatedAt!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

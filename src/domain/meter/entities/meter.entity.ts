@@ -38,7 +38,7 @@ export class Meter {
   })
   unit!: Unit;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

@@ -18,19 +18,19 @@ export class PulseDataMultiplier {
   @Column('numeric', { name: 'value', precision: 15, scale: 10 })
   value!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'expirationDateFrom',
     nullable: false,
   })
   expirationDateFrom!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'expirationDateUntil',
     nullable: true,
   })
   expirationDateUntil!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

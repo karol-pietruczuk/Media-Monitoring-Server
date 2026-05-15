@@ -18,13 +18,13 @@ export class PulseDataMeasurement {
   @Column('int', { name: 'pulses' })
   pulses!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'timestamp',
     default: () => 'getdate()',
   })
   timestamp!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })
