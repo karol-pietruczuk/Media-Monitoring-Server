@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { MeterCalibrationChangeType } from '../../../core/type/meter-calibration-change-type';
+import type { MeterCalibrationChangeType } from '../../../core/type/meter-calibration-change.type';
 
 @Index('PK_METER_CALIBRATION_HISTORY', ['id'], { unique: true })
 @Entity('meterCalibrationHistory', { schema: 'dbo' })
