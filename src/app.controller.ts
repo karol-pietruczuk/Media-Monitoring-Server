@@ -54,6 +54,11 @@ export class AppController {
 
     console.log({ totalCount: data.length, sampleData: data.slice(0, 5) });
 
+    const meter18Data = data.filter((dat) => dat.meterId === 18);
+    console.log({ meter18length: meter18Data.length });
+
+    console.log(meter18Data);
+
     return this.appService.getHello();
   }
 
