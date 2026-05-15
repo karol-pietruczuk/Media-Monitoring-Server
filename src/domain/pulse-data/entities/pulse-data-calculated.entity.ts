@@ -21,13 +21,13 @@ export class PulseDataCalculated {
   @Column('numeric', { name: 'actualValue', precision: 17, scale: 4 })
   actualValue!: number;
 
-  @Column('datetime', { name: 'actualTimestamp', default: () => 'getdate()' })
+  @Column('datetime2', { name: 'actualTimestamp', default: () => 'getdate()' })
   actualTimestamp!: Date;
 
   @Column('int', { name: 'meterId', unique: true })
   meterId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

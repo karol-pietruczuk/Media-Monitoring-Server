@@ -24,19 +24,19 @@ export class PulseDataMultiplierHistory {
   })
   pulseDataMultiplierValue!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'pulseDataMultiplierExpirationDateFrom',
     nullable: false,
   })
   pulseDataMultiplierExpirationDateFrom!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'pulseDataExpirationDateUntil',
     nullable: true,
   })
   pulseDataExpirationDateUntil!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'pulseDataMultiplierCreatedAt',
   })
   pulseDataMultiplierCreatedAt!: Date;
@@ -50,7 +50,7 @@ export class PulseDataMultiplierHistory {
   @Column({ type: 'int', name: 'meterCalibrationStopId' })
   meterCalibrationStopId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

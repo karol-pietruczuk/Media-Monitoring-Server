@@ -19,7 +19,7 @@ export class TotalDataChannel {
   @Column('nvarchar', { name: 'dataMappingInfo', length: 120 })
   dataMappingInfo!: string;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

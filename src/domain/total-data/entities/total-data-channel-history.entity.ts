@@ -26,12 +26,12 @@ export class TotalDataChannelHistory {
   @Column({ type: 'int', name: 'totalDataChannelDataSourceId' })
   totalDataChannelDataSourceId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'totalDataChannelCreatedAt',
   })
   totalDataChannelCreatedAt!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

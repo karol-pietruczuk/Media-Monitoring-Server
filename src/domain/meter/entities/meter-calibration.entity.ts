@@ -19,10 +19,10 @@ export class MeterCalibration {
   @Column('numeric', { name: 'value', precision: 17, scale: 4 })
   value!: number;
 
-  @Column('datetime', { name: 'timestamp' })
+  @Column('datetime2', { name: 'timestamp' })
   timestamp!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

@@ -26,12 +26,12 @@ export class PulseDataChannelHistory {
   @Column({ type: 'int', name: 'pulseDataChannelDataSourceId' })
   pulseDataChannelDataSourceId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'pulseDataChannelCreatedAt',
   })
   pulseDataChannelCreatedAt!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })
