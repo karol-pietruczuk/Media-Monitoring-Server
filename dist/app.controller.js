@@ -51,6 +51,9 @@ let AppController = class AppController {
         console.log(`Odczyt zakończony w ${Date.now() - startTime}ms.`);
         console.log(`Pobrano łącznie rekordów: ${data.length}`);
         console.log({ totalCount: data.length, sampleData: data.slice(0, 5) });
+        const meter18Data = data.filter((dat) => dat.meterId === 18);
+        console.log({ meter18length: meter18Data.length });
+        console.log(meter18Data);
         return this.appService.getHello();
     }
     async TESTCreateLocation(createLocationDto) {
