@@ -21,7 +21,7 @@ export class DataSource {
   @Column('nvarchar', { name: 'connectionInfo', length: 120 })
   connectionInfo!: string;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

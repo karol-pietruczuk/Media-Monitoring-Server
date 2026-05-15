@@ -27,13 +27,13 @@ export class LocationHistory {
   })
   locationSubLocation!: string | null;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'locationCreatedAt',
     default: () => 'getdate()',
   })
   locationCreatedAt!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

@@ -24,12 +24,12 @@ export class DataSourceHistory {
   @Column('nvarchar', { name: 'dataSourceConnectionInfo', length: 120 })
   dataSourceConnectionInfo!: string;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'dataSourcCreatedAt',
   })
   dataSourcCreatedAt!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })
