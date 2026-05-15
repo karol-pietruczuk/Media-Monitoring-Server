@@ -18,13 +18,13 @@ export class TotalDataMeasurement {
   @Column('decimal', { name: 'value', precision: 10, scale: 3 })
   value!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'timestamp',
     default: () => 'getdate()',
   })
   timestamp!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

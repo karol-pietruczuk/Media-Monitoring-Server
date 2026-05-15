@@ -20,10 +20,10 @@ export class MeterCalibrationHistory {
   @Column('numeric', { name: 'meterCalibrationValue', precision: 17, scale: 4 })
   meterCalibrationValue!: number;
 
-  @Column('datetime', { name: 'meterCalibrationTimestamp' })
+  @Column('datetime2', { name: 'meterCalibrationTimestamp' })
   meterCalibrationTimestamp!: Date;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'meterCalibrationCreatedAt',
   })
   meterCalibrationCreatedAt!: Date;
@@ -31,7 +31,7 @@ export class MeterCalibrationHistory {
   @Column({ type: 'int', name: 'meterCalibrationMeterId' })
   meterCalibrationMeterId!: number;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })

@@ -19,7 +19,7 @@ export class Location {
   @Column('nvarchar', { name: 'subLocation', nullable: true, length: 50 })
   subLocation!: string | null;
 
-  @Column('datetime', {
+  @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
   })
