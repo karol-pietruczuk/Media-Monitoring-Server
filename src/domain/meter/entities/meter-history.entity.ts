@@ -1,5 +1,14 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { Unit } from '../../../core/enums/unit.enum';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { Meter } from './meter.entity';
+import { User } from '../../user/entities/user.entity';
 import type { MeterChange } from '../../../core/enums/meter-change.enum';
 
 @Index('PK_METER_HISTORY', ['id'], { unique: true })
@@ -8,41 +17,39 @@ export class MeterHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column({
-    type: 'nvarchar',
-    name: 'meterChange',
-    length: 30,
-  })
-  meterChange!: MeterChange;
-
   @Column({ type: 'int', name: 'meterId' })
   meterId!: number;
 
-  @Column('nvarchar', { name: 'meterName', length: 50 })
-  meterName!: string;
+  @Column({ type: 'int', name: 'changedById', nullable: true })
+  changedById!: number | null; // Śledzenie zalogowanego użytkownika
 
-  @Column('nvarchar', { name: 'meterSymbol', length: 50 })
-  meterSymbol!: string;
+  @Column({ type: 'nvarchar', name: 'meterChange', length: 50 })
+  meterChange!: MeterChange;
 
   @Column({
     type: 'nvarchar',
-    name: 'meterUnit',
-    default: Unit.CubicMeter,
-    length: 30,
+    length: 'MAX',
+    name: 'oldValues',
+    nullable: true,
   })
-  meterUnit!: Unit;
+  oldValues!: string | null;
 
-  @Column({ type: 'int', name: 'meterLocationId' })
-  meterLocationId!: number;
-
-  @Column('datetime2', {
-    name: 'meterCreatedAt',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'newValues',
+    nullable: true,
   })
-  meterCreatedAt!: Date;
+  newValues!: string | null;
 
-  @Column('datetime2', {
-    name: 'createdAt',
-    default: () => 'getdate()',
-  })
+  @CreateDateColumn({ type: 'datetime2', name: 'createdAt' })
   createdAt!: Date;
+
+  @ManyToOne(() => Meter, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'meterId' })
+  meter!: Meter;
+
+  @ManyToOne(() => User, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'changedById' })
+  changedBy!: User;
 }
