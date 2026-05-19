@@ -21,6 +21,9 @@ export class DataSource {
   @Column('nvarchar', { name: 'connectionInfo', length: 120 })
   connectionInfo!: string;
 
+  @Column('bit', { name: 'isActive', default: true }) // W MSSQL bit to boolean (1 = true, 0 = false)
+  isActive!: boolean;
+
   @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',
