@@ -10,6 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from './entities/user.entity';
 import { UserRole } from '../../core/enum/user-role.enum';
 import { UserUpdatedEvent } from './events/user-updated.event';
+import { UserChange } from '../../core/enum/user-change.enum';
 
 @Injectable()
 export class UserService {
@@ -55,7 +56,7 @@ export class UserService {
       new UserUpdatedEvent(
         savedUser.id,
         creatorId,
-        'USER_CREATED',
+        UserChange.CreatedUser,
         {},
         { email, firstName, lastName, role },
       ),
@@ -105,7 +106,7 @@ export class UserService {
       new UserUpdatedEvent(
         user.id,
         changedById,
-        'ROLE_CHANGED',
+        UserChange.UpdatedUser,
         { role: oldRole },
         { role: newRole },
       ),
@@ -126,7 +127,7 @@ export class UserService {
       new UserUpdatedEvent(
         user.id,
         changedById,
-        'USER_DEACTIVATED',
+        UserChange.DeactivatedUser,
         { isActive: true },
         { isActive: false },
       ),

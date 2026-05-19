@@ -25,6 +25,8 @@ const pulse_data_module_1 = require("./domain/pulse-data/pulse-data.module");
 const data_source_module_1 = require("./domain/data-source/data-source.module");
 const total_data_module_1 = require("./domain/total-data/total-data.module");
 const opcua_module_1 = require("./infrastructure/opcua/opcua.module");
+const user_module_1 = require("./domain/user/user.module");
+const event_emitter_1 = require("@nestjs/event-emitter");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -35,6 +37,7 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
                 load: [configuration_1.default],
             }),
+            event_emitter_1.EventEmitterModule.forRoot(),
             data_source_module_1.DataSourceModule,
             location_module_1.LocationModule,
             meter_module_1.MeterModule,
@@ -43,6 +46,7 @@ exports.AppModule = AppModule = __decorate([
             data_sync_module_1.DataSyncModule,
             database_module_1.DataBaseModule,
             opcua_module_1.OpcUaModule,
+            user_module_1.UserModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],
