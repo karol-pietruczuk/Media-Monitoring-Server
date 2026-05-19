@@ -9,13 +9,17 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { LocationService } from './location.service';
 import { Location } from './entities/location.entity';
 import { UserRole } from '../../core/enums/user-role.enum';
-import { JwtAuthGuard } from '../../feature/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../feature/auth/guards/roles.guard';
-import { Roles } from '../../feature/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../features/auth/guards/roles.guard';
+import { Roles } from '../../features/auth/decorators/roles.decorator';
+import { CreateLocationDto } from './dto/create-location.dto';
+import { FindAllLocationDto } from './dto/find-all-location.dto';
 
 // Interfejs reprezentujący otypowany obiekt użytkownika wstrzyknięty przez JwtStrategy
 interface IRequestWithUser extends Request {
@@ -32,24 +36,23 @@ export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
   @Post()
-  @Roles(UserRole.Operator, UserRole.Admin) // Tylko OPERATOR i ADMIN mogą tworzyć lokalizacje
+  @Roles(UserRole.Operator, UserRole.Admin)
   async create(
-    @Body('mainLocation') mainLocation: string,
-    @Body('subLocation') subLocation: string | null,
+    @Body() dto: CreateLocationDto, // <-- Zmiana na całe DTO
     @Req() req: IRequestWithUser,
   ): Promise<Location> {
-    const loggedInUser = req.user;
     return this.locationService.create(
-      mainLocation,
-      subLocation,
-      loggedInUser.id,
+      dto.mainLocation,
+      dto.subLocation,
+      req.user.id,
     );
   }
 
   @Get()
   // Brak dekoratora @Roles sprawia, że każda zalogowana osoba (w tym VIEWER) ma dostęp
-  async findAll(): Promise<Location[]> {
-    return this.locationService.findAll();
+  async findAll(@Query() query: FindAllLocationDto): Promise<Location[]> {
+    // Przekazujemy DTO z parametrami paginacji/wyszukiwania do serwisu
+    return this.locationService.findAll(query);
   }
 
   @Get(':id')
@@ -58,19 +61,17 @@ export class LocationController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.Operator, UserRole.Admin) // Modyfikacja zarezerwowana dla OPERATORA i ADMINA
+  @Roles(UserRole.Operator, UserRole.Admin)
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body('mainLocation') mainLocation: string,
-    @Body('subLocation') subLocation: string | null,
+    @Body() dto: CreateLocationDto, // <-- Zmiana na całe DTO
     @Req() req: IRequestWithUser,
   ): Promise<Location> {
-    const loggedInUser = req.user;
     return this.locationService.update(
       id,
-      mainLocation,
-      subLocation,
-      loggedInUser.id,
+      dto.mainLocation,
+      dto.subLocation,
+      req.user.id,
     );
   }
 

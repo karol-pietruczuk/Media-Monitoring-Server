@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Location } from './entities/location.entity';
 import { LocationUpdatedEvent } from './events/location-updated.event';
 import { LocationChange } from '../../core/enums/location-change.enum';
+import { FindAllLocationDto } from './dto/find-all-location.dto';
 
 @Injectable()
 export class LocationService {
@@ -41,8 +42,24 @@ export class LocationService {
     return savedLocation;
   }
 
-  async findAll(): Promise<Location[]> {
-    return this.locationRepository.find();
+  async findAll(dto: FindAllLocationDto): Promise<Location[]> {
+    const { page = 1, limit = 20, search, sortBy = 'createdAt' } = dto;
+    const skip = (page - 1) * limit;
+
+    // Budujemy dynamiczny warunek WHERE dla wyszukiwania tekstowego
+    const whereCondition = search
+      ? [
+          { mainLocation: ILike(`%${search}%`) },
+          { subLocation: ILike(`%${search}%`) },
+        ]
+      : {};
+
+    return this.locationRepository.find({
+      where: whereCondition,
+      order: { [sortBy]: 'ASC' }, // Sortowanie dynamiczne po zdefiniowanej kolumnie
+      skip: skip,
+      take: limit,
+    });
   }
 
   async findById(id: number): Promise<Location> {

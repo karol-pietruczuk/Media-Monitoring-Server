@@ -4,7 +4,7 @@ import configuration from './config/configuration';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DataBaseModule } from './infrastructure/database/database.module';
-import { DataSyncModule } from './feature/data-sync/data-sync.module';
+import { DataSyncModule } from './features/data-sync/data-sync.module';
 import { DataBaseService } from './infrastructure/database/database.service';
 import { LocationModule } from './domain/location/location.module';
 import { LocationService } from './domain/location/location.service';
@@ -15,7 +15,7 @@ import { TotalDataModule } from './domain/total-data/total-data.module';
 import { OpcUaModule } from './infrastructure/opcua/opcua.module';
 import { UserModule } from './domain/user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AuthModule } from './feature/auth/auth.module';
+import { AuthModule } from './features/auth/auth.module';
 
 @Module({
   imports: [
