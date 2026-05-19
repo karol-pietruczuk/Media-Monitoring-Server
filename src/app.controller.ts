@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DataBaseService } from './infrastructure/database/database.service';
-import { CreateLocationDto } from './domain/location/dto/create-location.dto';
 import { LocationService } from './domain/location/location.service';
 import { OpcUaService } from './infrastructure/opcua/opcua.service';
 import { OpcUaConnectionDto } from './infrastructure/opcua/dto/opcua-connection.dto';
@@ -60,10 +59,5 @@ export class AppController {
     console.log(meter18Data);
 
     return this.appService.getHello();
-  }
-
-  @Post()
-  async TESTCreateLocation(@Body() createLocationDto: CreateLocationDto) {
-    return await this.locationService.createLocation(createLocationDto);
   }
 }

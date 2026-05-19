@@ -1,41 +1,57 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { LocationChangetype } from '../../../core/type/location-change.type';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { Location } from './location.entity';
+import { User } from '../../user/entities/user.entity';
+import type { LocationChange } from '../../../core/enum/location-change.enum';
 
-@Index('PK_LOCATION_HISTORY', ['id'], { unique: true })
-@Entity('locationHistory', { schema: 'dbo' })
+@Index('PK_Location_History', ['id'], { unique: true })
+@Entity('location_history', { schema: 'dbo' })
 export class LocationHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
+  @Column({ type: 'int', name: 'locationId' })
+  locationId!: number; // ID lokalizacji, która uległa zmianie
+
+  @Column({ type: 'int', name: 'changedById', nullable: true })
+  changedById!: number | null; // ID zalogowanego operatora wykonującego akcję
+
+  @Column({ type: 'nvarchar', length: 50, name: 'action' })
+  action!: LocationChange; // np. 'LOCATION_CREATED', 'LOCATION_UPDATED', 'LOCATION_DELETED'
+
   @Column({
     type: 'nvarchar',
-    name: 'locationChangetype',
-    length: 30,
-  })
-  locationChangetype!: LocationChangetype;
-
-  @Column({ type: 'int', name: 'locationId' })
-  locationId!: number;
-
-  @Column('nvarchar', { name: 'locationMainLocation', length: 50 })
-  locationMainLocation!: string;
-
-  @Column('nvarchar', {
-    name: 'locationSubLocation',
+    length: 'MAX',
+    name: 'oldValues',
     nullable: true,
-    length: 50,
   })
-  locationSubLocation!: string | null;
+  oldValues!: string | null; // Stan przed zmianą w formacie JSON
 
-  @Column('datetime2', {
-    name: 'locationCreatedAt',
-    default: () => 'getdate()',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'newValues',
+    nullable: true,
   })
-  locationCreatedAt!: Date;
+  newValues!: string | null; // Stan po zmianie w formacie JSON
 
-  @Column('datetime2', {
-    name: 'createdAt',
-    default: () => 'getdate()',
-  })
+  @CreateDateColumn({ type: 'datetime2', name: 'createdAt' })
   createdAt!: Date;
+
+  // Bezpieczna relacja logiczna (bez klucza obcego w bazie MSSQL)
+  @ManyToOne(() => Location, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'locationId' })
+  location!: Location;
+
+  // Powiązanie z użytkownikiem, który dokonał modyfikacji
+  @ManyToOne(() => User, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'changedById' })
+  changedBy!: User;
 }

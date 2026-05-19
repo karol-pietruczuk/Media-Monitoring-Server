@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from './user.entity';
+import type { UserChange } from '../../../core/enum/user-change.enum';
 
 @Index('PK_User_History', ['id'], { unique: true })
 @Entity('user_history')
@@ -22,7 +23,7 @@ export class UserHistory {
   changedById!: number | null; // ID zalogowanego użytkownika (np. admina), który kliknął "zapisz"
 
   @Column({ type: 'nvarchar', length: 50 })
-  action!: string; // np. 'USER_CREATED', 'ROLE_CHANGED', 'USER_DEACTIVATED'
+  action!: UserChange; // np. 'USER_CREATED', 'ROLE_CHANGED', 'USER_DEACTIVATED'
 
   // W MSSQL nvarchar(max) typu ISJSON pozwoli zapisać stan pól przed i po zmianie
   @Column({
