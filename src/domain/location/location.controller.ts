@@ -20,6 +20,7 @@ import { RolesGuard } from '../../features/auth/guards/roles.guard';
 import { Roles } from '../../features/auth/decorators/roles.decorator';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { FindAllLocationDto } from './dto/find-all-location.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 // Interfejs reprezentujący otypowany obiekt użytkownika wstrzyknięty przez JwtStrategy
 interface IRequestWithUser extends Request {
@@ -64,14 +65,18 @@ export class LocationController {
   @Roles(UserRole.Operator, UserRole.Admin)
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateLocationDto, // <-- Zmiana na całe DTO
+    @Body() dto: UpdateLocationDto, // <-- ZMIANA: podstawiamy dedykowane Update DTO zamiast Create DTO
     @Req() req: IRequestWithUser,
   ): Promise<Location> {
+    const loggedInUser = req.user;
+
+    // Ponieważ w UpdateLocationDto pola są opcjonalne (mogą być undefined),
+    // serwis powinien obsłużyć tylko te wartości, które faktycznie przyszły z frontendu.
     return this.locationService.update(
       id,
       dto.mainLocation,
-      dto.subLocation,
-      req.user.id,
+      dto.subLocation ?? null,
+      loggedInUser.id,
     );
   }
 
