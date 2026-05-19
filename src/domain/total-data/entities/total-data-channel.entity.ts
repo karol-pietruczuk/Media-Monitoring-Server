@@ -16,7 +16,7 @@ export class TotalDataChannel {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column('nvarchar', { name: 'dataMappingInfo', length: 120 })
+  @Column('nvarchar', { name: 'dataMappingInfo', length: 'MAX' }) // Zmiana z 120 na 'MAX'
   dataMappingInfo!: string;
 
   @Column('datetime2', {
