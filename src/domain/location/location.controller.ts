@@ -7,26 +7,47 @@ import {
   Param,
   Delete,
   ParseIntPipe,
-  Headers,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { LocationService } from './location.service';
 import { Location } from './entities/location.entity';
+import { UserRole } from '../../core/enums/user-role.enum';
+import { JwtAuthGuard } from '../../feature/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../feature/auth/guards/roles.guard';
+import { Roles } from '../../feature/auth/decorators/roles.decorator';
+
+// Interfejs reprezentujący otypowany obiekt użytkownika wstrzyknięty przez JwtStrategy
+interface IRequestWithUser extends Request {
+  user: {
+    id: number;
+    email: string;
+    role: UserRole;
+  };
+}
 
 @Controller('locations')
+@UseGuards(JwtAuthGuard, RolesGuard) // Każdy endpoint domyślnie wymaga zalogowania tokenem JWT
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
   @Post()
+  @Roles(UserRole.Operator, UserRole.Admin) // Tylko OPERATOR i ADMIN mogą tworzyć lokalizacje
   async create(
     @Body('mainLocation') mainLocation: string,
     @Body('subLocation') subLocation: string | null,
-    @Headers('x-user-id') creatorIdHeader?: string, // Tymczasowe pobieranie ID wykonawcy przed wdrożeniem JWT
+    @Req() req: IRequestWithUser,
   ): Promise<Location> {
-    const creatorId = creatorIdHeader ? parseInt(creatorIdHeader, 10) : null;
-    return this.locationService.create(mainLocation, subLocation, creatorId);
+    const loggedInUser = req.user;
+    return this.locationService.create(
+      mainLocation,
+      subLocation,
+      loggedInUser.id,
+    );
   }
 
   @Get()
+  // Brak dekoratora @Roles sprawia, że każda zalogowana osoba (w tym VIEWER) ma dostęp
   async findAll(): Promise<Location[]> {
     return this.locationService.findAll();
   }
@@ -37,28 +58,30 @@ export class LocationController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.Operator, UserRole.Admin) // Modyfikacja zarezerwowana dla OPERATORA i ADMINA
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body('mainLocation') mainLocation: string,
     @Body('subLocation') subLocation: string | null,
-    @Headers('x-user-id') changedByIdHeader: string, // Wymagane przekazanie ID w nagłówku do celów testowych
+    @Req() req: IRequestWithUser,
   ): Promise<Location> {
-    const changedById = parseInt(changedByIdHeader, 10);
+    const loggedInUser = req.user;
     return this.locationService.update(
       id,
       mainLocation,
       subLocation,
-      changedById,
+      loggedInUser.id,
     );
   }
 
   @Delete(':id')
+  @Roles(UserRole.Admin) // Wyłącznie główny ADMINISTRATOR może usunąć halę/lokalizację
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Headers('x-user-id') changedByIdHeader: string,
+    @Req() req: IRequestWithUser,
   ): Promise<{ message: string }> {
-    const changedById = parseInt(changedByIdHeader, 10);
-    await this.locationService.remove(id, changedById);
+    const loggedInUser = req.user;
+    await this.locationService.remove(id, loggedInUser.id);
 
     return {
       message:

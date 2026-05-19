@@ -15,6 +15,7 @@ import { TotalDataModule } from './domain/total-data/total-data.module';
 import { OpcUaModule } from './infrastructure/opcua/opcua.module';
 import { UserModule } from './domain/user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AuthModule } from './feature/auth/auth.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     DataBaseModule,
     OpcUaModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataBaseService, LocationService],
