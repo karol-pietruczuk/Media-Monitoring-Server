@@ -8,9 +8,9 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from './entities/user.entity';
-import { UserRole } from '../../core/enum/user-role.enum';
+import { UserRole } from '../../core/enums/user-role.enum';
 import { UserUpdatedEvent } from './events/user-updated.event';
-import { UserChange } from '../../core/enum/user-change.enum';
+import { UserChange } from '../../core/enums/user-change.enum';
 
 @Injectable()
 export class UserService {

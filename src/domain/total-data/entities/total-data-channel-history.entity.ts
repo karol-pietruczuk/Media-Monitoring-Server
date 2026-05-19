@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { TotalDataChannelChangeType } from '../../../core/type/total-data-channel-change.type';
+import type { TotalDataChannelChange } from '../../../core/enums/total-data-channel-change.enum';
 
 @Index('PK_TOTAL_DATA_CHANNEL_HISTORY', ['id'], { unique: true })
 @Entity('totalDataChannelHistory', { schema: 'dbo' })
@@ -12,7 +12,7 @@ export class TotalDataChannelHistory {
     name: 'totalDataChannelChangeType',
     length: 30,
   })
-  totalDataChannelChangeType!: TotalDataChannelChangeType;
+  totalDataChannelChangeType!: TotalDataChannelChange;
 
   @Column({ type: 'int', name: 'totalDataChannelId' })
   totalDataChannelId!: number;

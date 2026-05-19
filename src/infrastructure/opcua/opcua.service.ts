@@ -10,7 +10,7 @@ import {
 import {
   IDataProvider,
   IFlatReadingResult,
-} from '../../core/interface/data-provider.interface';
+} from '../../core/interfaces/data-provider.interface';
 import { OpcUaConnectionDto } from './dto/opcua-connection.dto';
 import { IOpcUaBulkMapping } from './interface/opcua-mapping.interface';
 

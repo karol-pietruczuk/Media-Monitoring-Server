@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IDataProvider } from '../core/interface/data-provider.interface';
+import { IDataProvider } from '../core/interfaces/data-provider.interface';
 import { OpcUaService } from './opcua/opcua.service';
 
 @Injectable()

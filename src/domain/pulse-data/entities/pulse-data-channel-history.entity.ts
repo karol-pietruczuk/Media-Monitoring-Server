@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { PulseDataChannelChangeType } from '../../../core/type/pulse-data-channel-change.type';
+import type { PulseDataChannelChange } from '../../../core/enums/pulse-data-channel-change.enum';
 
 @Index('PK_PULSE_DATA_CHANNEL_HISTORY', ['id'], { unique: true })
 @Entity('pulseDataChannelHistory', { schema: 'dbo' })
@@ -12,7 +12,7 @@ export class PulseDataChannelHistory {
     name: 'pulseDataChannelChange',
     length: 30,
   })
-  pulseDataChannelChange!: PulseDataChannelChangeType;
+  pulseDataChannelChange!: PulseDataChannelChange;
 
   @Column({ type: 'int', name: 'pulseDataChannelId' })
   pulseDataChannelId!: number;

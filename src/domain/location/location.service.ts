@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Location } from './entities/location.entity';
 import { LocationUpdatedEvent } from './events/location-updated.event';
-import { LocationChange } from '../../core/enum/location-change.enum';
+import { LocationChange } from '../../core/enums/location-change.enum';
 
 @Injectable()
 export class LocationService {
