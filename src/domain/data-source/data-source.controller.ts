@@ -13,10 +13,10 @@ import {
 } from '@nestjs/common';
 import { DataSourceService } from './data-source.service';
 import { CreateDataSourceDto } from './dto/create-data-source.dto';
-import { Roles } from '../../feature/auth/decorators/roles.decorator';
+import { Roles } from '../../features/auth/decorators/roles.decorator';
 import { UserRole } from '../../core/enums/user-role.enum';
-import { JwtAuthGuard } from '../../feature/auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../feature/auth/guards/roles.guard';
+import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../features/auth/guards/roles.guard';
 
 interface IRequestWithUser extends Request {
   user: { id: number; email: string; role: UserRole };

@@ -16,7 +16,7 @@ const configuration_1 = __importDefault(require("./config/configuration"));
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const database_module_1 = require("./infrastructure/database/database.module");
-const data_sync_module_1 = require("./feature/data-sync/data-sync.module");
+const data_sync_module_1 = require("./features/data-sync/data-sync.module");
 const database_service_1 = require("./infrastructure/database/database.service");
 const location_module_1 = require("./domain/location/location.module");
 const location_service_1 = require("./domain/location/location.service");
@@ -27,7 +27,7 @@ const total_data_module_1 = require("./domain/total-data/total-data.module");
 const opcua_module_1 = require("./infrastructure/opcua/opcua.module");
 const user_module_1 = require("./domain/user/user.module");
 const event_emitter_1 = require("@nestjs/event-emitter");
-const auth_module_1 = require("./feature/auth/auth.module");
+const auth_module_1 = require("./features/auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;

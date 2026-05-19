@@ -11,7 +11,7 @@ import { Location } from './location.entity';
 import { User } from '../../user/entities/user.entity';
 import type { LocationChange } from '../../../core/enums/location-change.enum';
 
-@Index('PK_Location_History', ['id'], { unique: true })
+@Index('PK_LOCATION_HISTORY', ['id'], { unique: true })
 @Entity('location_history', { schema: 'dbo' })
 export class LocationHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
