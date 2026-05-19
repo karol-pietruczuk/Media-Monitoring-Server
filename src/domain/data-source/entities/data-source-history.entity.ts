@@ -1,5 +1,14 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { DataSourceProtocol } from '../../../core/enums/data-source-protocol.enum';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { DataSource } from './data-source.entity';
+import { User } from '../../user/entities/user.entity';
 import type { DataSourceChange } from '../../../core/enums/data-source-change.enum';
 
 @Index('PK_DATA_SOURCE_HISTORY', ['id'], { unique: true })
@@ -8,30 +17,39 @@ export class DataSourceHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column({
-    type: 'nvarchar',
-    name: 'dataSourceChange',
-    length: 30,
-  })
-  dataSourceChange!: DataSourceChange;
-
   @Column({ type: 'int', name: 'dataSourceId' })
   dataSourceId!: number;
 
-  @Column('nvarchar', { name: 'dataSourceProtocol', length: 30 })
-  dataSourceProtocol!: DataSourceProtocol;
+  @Column({ type: 'int', name: 'changedById', nullable: true })
+  changedById!: number | null; // Kluczowe dla audytu (kto edytował IP/port)
 
-  @Column('nvarchar', { name: 'dataSourceConnectionInfo', length: 120 })
-  dataSourceConnectionInfo!: string;
+  @Column({ type: 'nvarchar', length: 50, name: 'dataSourceChange' })
+  dataSourceChange!: DataSourceChange;
 
-  @Column('datetime2', {
-    name: 'dataSourcCreatedAt',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'oldValues',
+    nullable: true,
   })
-  dataSourcCreatedAt!: Date;
+  oldValues!: string | null;
 
-  @Column('datetime2', {
-    name: 'createdAt',
-    default: () => 'getdate()',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'newValues',
+    nullable: true,
   })
+  newValues!: string | null;
+
+  @CreateDateColumn({ type: 'datetime2', name: 'createdAt' })
   createdAt!: Date;
+
+  @ManyToOne(() => DataSource, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'dataSourceId' })
+  dataSource!: DataSource;
+
+  @ManyToOne(() => User, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'changedById' })
+  changedBy!: User;
 }
