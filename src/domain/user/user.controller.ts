@@ -10,7 +10,7 @@ import {
   Headers,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UserRole } from '../../core/enum/user-role.enum';
+import { UserRole } from '../../core/enums/user-role.enum';
 import { User } from './entities/user.entity';
 
 @Controller('users')

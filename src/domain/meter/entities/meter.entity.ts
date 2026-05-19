@@ -8,7 +8,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Unit } from '../../../core/enum/unit.enum';
+import { Unit } from '../../../core/enums/unit.enum';
 import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
 import { MeterCalibration } from './meter-calibration.entity';
 import { PulseDataMultiplier } from '../../pulse-data/entities/pulse-data-multiplier.entity';
@@ -33,7 +33,7 @@ export class Meter {
   @Column({
     type: 'nvarchar',
     name: 'unit',
-    default: Unit.cubicMeter,
+    default: Unit.CubicMeter,
     length: 30,
   })
   unit!: Unit;

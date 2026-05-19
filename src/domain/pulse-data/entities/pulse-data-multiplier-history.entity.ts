@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { PulseDataMultiplierChangeType } from '../../../core/type/pulse-data-multiplier-change.type';
+import type { PulseDataMultiplierChange } from '../../../core/enums/pulse-data-multiplier-change.enum';
 
 @Index('PK_PULSE_DATA_MULTIPLIER_HISTORY', ['id'], { unique: true })
 @Entity('pulseDataMultiplierHistory', { schema: 'dbo' })
@@ -12,7 +12,7 @@ export class PulseDataMultiplierHistory {
     name: 'pulseDataMultiplierHistoryChange',
     length: 30,
   })
-  pulseDataMultiplierHistoryChange!: PulseDataMultiplierChangeType;
+  pulseDataMultiplierHistoryChange!: PulseDataMultiplierChange;
 
   @Column({ type: 'int', name: 'pulseDataMultiplierId' })
   pulseDataMultiplierId!: number;

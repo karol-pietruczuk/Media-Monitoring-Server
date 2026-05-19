@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import type { MeterCalibrationChangeType } from '../../../core/type/meter-calibration-change.type';
+import type { MeterCalibrationChange } from '../../../core/enums/meter-calibration-change.enum';
 
 @Index('PK_METER_CALIBRATION_HISTORY', ['id'], { unique: true })
 @Entity('meterCalibrationHistory', { schema: 'dbo' })
@@ -12,7 +12,7 @@ export class MeterCalibrationHistory {
     name: 'meterCalibrationChangeType',
     length: 30,
   })
-  meterCalibrationChangeType!: MeterCalibrationChangeType;
+  meterCalibrationChangeType!: MeterCalibrationChange;
 
   @Column({ type: 'int', name: 'meterCalibrationId' })
   meterCalibrationId!: number;

@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { Location } from './location.entity';
 import { User } from '../../user/entities/user.entity';
-import type { LocationChange } from '../../../core/enum/location-change.enum';
+import type { LocationChange } from '../../../core/enums/location-change.enum';
 
 @Index('PK_Location_History', ['id'], { unique: true })
 @Entity('location_history', { schema: 'dbo' })

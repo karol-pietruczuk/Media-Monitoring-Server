@@ -1,4 +1,4 @@
-import type { LocationChange } from '../../../core/enum/location-change.enum';
+import type { LocationChange } from '../../../core/enums/location-change.enum';
 
 export class LocationUpdatedEvent {
   constructor(

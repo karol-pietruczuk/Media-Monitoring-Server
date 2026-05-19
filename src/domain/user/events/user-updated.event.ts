@@ -1,4 +1,4 @@
-import { UserChange } from '../../../core/enum/user-change.enum';
+import { UserChange } from '../../../core/enums/user-change.enum';
 
 export class UserUpdatedEvent {
   constructor(

@@ -8,7 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from './user.entity';
-import type { UserChange } from '../../../core/enum/user-change.enum';
+import type { UserChange } from '../../../core/enums/user-change.enum';
 
 @Index('PK_User_History', ['id'], { unique: true })
 @Entity('user_history')

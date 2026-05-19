@@ -1,6 +1,6 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { Unit } from '../../../core/enum/unit.enum';
-import type { MeterChangeType } from '../../../core/type/meter-change.type';
+import { Unit } from '../../../core/enums/unit.enum';
+import type { MeterChange } from '../../../core/enums/meter-change.enum';
 
 @Index('PK_METER_HISTORY', ['id'], { unique: true })
 @Entity('meterHistory', { schema: 'dbo' })
@@ -13,7 +13,7 @@ export class MeterHistory {
     name: 'meterChange',
     length: 30,
   })
-  meterChange!: MeterChangeType;
+  meterChange!: MeterChange;
 
   @Column({ type: 'int', name: 'meterId' })
   meterId!: number;
@@ -27,7 +27,7 @@ export class MeterHistory {
   @Column({
     type: 'nvarchar',
     name: 'meterUnit',
-    default: Unit.cubicMeter,
+    default: Unit.CubicMeter,
     length: 30,
   })
   meterUnit!: Unit;

@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { UserRole } from '../../../core/enum/user-role.enum';
+import { UserRole } from '../../../core/enums/user-role.enum';
 
 @Index('PK_User', ['id'], { unique: true })
 @Entity('user')
@@ -30,7 +30,7 @@ export class User {
   @Column({
     type: 'varchar',
     length: 20,
-    default: UserRole.VIEWER,
+    default: UserRole.Viewer,
   })
   role!: UserRole;
 
