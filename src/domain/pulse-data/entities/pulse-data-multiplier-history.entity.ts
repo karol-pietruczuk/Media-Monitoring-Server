@@ -1,4 +1,14 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
+import { PulseDataMultiplier } from './pulse-data-multiplier.entity';
+import { User } from '../../user/entities/user.entity';
 import type { PulseDataMultiplierChange } from '../../../core/enums/pulse-data-multiplier-change.enum';
 
 @Index('PK_PULSE_DATA_MULTIPLIER_HISTORY', ['id'], { unique: true })
@@ -7,52 +17,43 @@ export class PulseDataMultiplierHistory {
   @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
   id!: number;
 
-  @Column({
-    type: 'nvarchar',
-    name: 'pulseDataMultiplierHistoryChange',
-    length: 30,
-  })
-  pulseDataMultiplierHistoryChange!: PulseDataMultiplierChange;
-
   @Column({ type: 'int', name: 'pulseDataMultiplierId' })
   pulseDataMultiplierId!: number;
 
-  @Column('numeric', {
-    name: 'pulseDataMultiplierValue',
-    precision: 15,
-    scale: 10,
-  })
-  pulseDataMultiplierValue!: number;
+  @Column({ type: 'int', name: 'changedById', nullable: true })
+  changedById!: number | null;
 
-  @Column('datetime2', {
-    name: 'pulseDataMultiplierExpirationDateFrom',
-    nullable: false,
+  @Column({
+    type: 'nvarchar',
+    name: 'pulseDataMultiplierHistoryChange',
+    length: 50,
   })
-  pulseDataMultiplierExpirationDateFrom!: Date;
+  pulseDataMultiplierHistoryChange!: PulseDataMultiplierChange;
 
-  @Column('datetime2', {
-    name: 'pulseDataExpirationDateUntil',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'oldValues',
     nullable: true,
   })
-  pulseDataExpirationDateUntil!: Date;
+  oldValues!: string | null;
 
-  @Column('datetime2', {
-    name: 'pulseDataMultiplierCreatedAt',
+  @Column({
+    type: 'nvarchar',
+    length: 'MAX',
+    name: 'newValues',
+    nullable: true,
   })
-  pulseDataMultiplierCreatedAt!: Date;
+  newValues!: string | null;
 
-  @Column({ type: 'int', name: 'pulseDataMeterId' })
-  pulseDataMeterId!: number;
-
-  @Column({ type: 'int', name: 'meterCalibrationStartId' })
-  meterCalibrationStartId!: number;
-
-  @Column({ type: 'int', name: 'meterCalibrationStopId' })
-  meterCalibrationStopId!: number;
-
-  @Column('datetime2', {
-    name: 'createdAt',
-    default: () => 'getdate()',
-  })
+  @CreateDateColumn({ type: 'datetime2', name: 'createdAt' })
   createdAt!: Date;
+
+  @ManyToOne(() => PulseDataMultiplier, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'pulseDataMultiplierId' })
+  pulseDataMultiplier!: PulseDataMultiplier;
+
+  @ManyToOne(() => User, { createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'changedById' })
+  changedBy!: User;
 }
