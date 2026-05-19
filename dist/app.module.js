@@ -27,6 +27,7 @@ const total_data_module_1 = require("./domain/total-data/total-data.module");
 const opcua_module_1 = require("./infrastructure/opcua/opcua.module");
 const user_module_1 = require("./domain/user/user.module");
 const event_emitter_1 = require("@nestjs/event-emitter");
+const auth_module_1 = require("./feature/auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -47,6 +48,7 @@ exports.AppModule = AppModule = __decorate([
             database_module_1.DataBaseModule,
             opcua_module_1.OpcUaModule,
             user_module_1.UserModule,
+            auth_module_1.AuthModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],
