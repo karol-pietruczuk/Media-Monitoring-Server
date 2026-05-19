@@ -74,8 +74,8 @@ export class LocationService {
 
   async update(
     id: number,
-    mainLocation: string,
-    subLocation: string | null,
+    mainLocation: string | undefined, // Zmiana typu na opcjonalny string
+    subLocation: string | null | undefined, // Zmiana typu na opcjonalny string/null
     changedById: number,
   ): Promise<Location> {
     const location = await this.findById(id);
@@ -85,12 +85,15 @@ export class LocationService {
       subLocation: location.subLocation,
     };
 
+    // Przypisujemy nową wartość tylko wtedy, gdy została jawnie przekazana w DTO
     const newValues = {
-      mainLocation,
-      subLocation,
+      mainLocation:
+        mainLocation !== undefined ? mainLocation : location.mainLocation,
+      subLocation:
+        subLocation !== undefined ? subLocation : location.subLocation,
     };
 
-    // Jeśli nic się nie zmieniło, pomijamy zapis i generowanie logu historii
+    // Jeśli po analizie nic się nie zmieniło, przerywamy zapis
     if (
       oldValues.mainLocation === newValues.mainLocation &&
       oldValues.subLocation === newValues.subLocation
@@ -98,12 +101,12 @@ export class LocationService {
       return location;
     }
 
-    location.mainLocation = mainLocation;
-    location.subLocation = subLocation;
+    location.mainLocation = newValues.mainLocation;
+    location.subLocation = newValues.subLocation;
 
     const updatedLocation = await this.locationRepository.save(location);
 
-    // Emitujemy zdarzenie edycji lokalizacji
+    // Emitujemy zdarzenie edycji z precyzyjnymi danymi różnicowymi
     this.eventEmitter.emit(
       'location.updated',
       new LocationUpdatedEvent(
