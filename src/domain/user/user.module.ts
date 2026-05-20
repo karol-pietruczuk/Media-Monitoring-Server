@@ -7,24 +7,9 @@ import { UserController } from './user.controller';
 import { UserHistoryListener } from './listeners/user-history.listener';
 
 @Module({
-  imports: [
-    // Rejestrujemy obie encje w kontekście TypeORM dla bazy MSSQL
-    TypeOrmModule.forFeature([User, UserHistory]),
-  ],
-  controllers: [
-    // Wystawia endpointy HTTP (CRUD) dla React / Electron
-    UserController,
-  ],
-  providers: [
-    // Główny serwis zarządzający danymi użytkowników
-    UserService,
-    // Słuchacz modułu Events odpowiedzialny za bezblokujący zapis historii w tle
-    UserHistoryListener,
-  ],
-  exports: [
-    // Eksportujemy UserService i TypeOrmModule, żeby moduły zależne mogły w razie potrzeby wstrzykiwać serwis lub repository
-    TypeOrmModule,
-    UserService,
-  ],
+  imports: [TypeOrmModule.forFeature([User, UserHistory])],
+  controllers: [UserController],
+  providers: [UserService, UserHistoryListener], // Dodano UserHistoryListener
+  exports: [UserService],
 })
 export class UserModule {}
