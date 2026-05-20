@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource } from './entities/data-source.entity';
 import { CreateDataSourceDto } from './dto/create-data-source.dto';
+import { UpdateDataSourceDto } from './dto/update-data-source.dto';
 import { DataSourceUpdatedEvent } from './events/data-source-updated.event';
 import { DataSourceChange } from '../../core/enums/data-source-change.enum';
 
@@ -58,7 +59,7 @@ export class DataSourceService {
 
   async update(
     id: number,
-    dto: CreateDataSourceDto,
+    dto: UpdateDataSourceDto,
     changedById: number,
   ): Promise<DataSource> {
     const dataSource = await this.findById(id);
@@ -71,17 +72,24 @@ export class DataSourceService {
       >,
     };
 
-    const connectionInfoString = JSON.stringify(dto.connectionInfo);
+    let hasChanges = false;
 
-    if (
-      dataSource.protocol === dto.protocol &&
-      dataSource.connectionInfo === connectionInfoString
-    ) {
-      return dataSource;
+    if (dto.protocol !== undefined && dataSource.protocol !== dto.protocol) {
+      dataSource.protocol = dto.protocol;
+      hasChanges = true;
     }
 
-    dataSource.protocol = dto.protocol;
-    dataSource.connectionInfo = connectionInfoString;
+    if (dto.connectionInfo !== undefined) {
+      const connectionInfoString = JSON.stringify(dto.connectionInfo);
+      if (dataSource.connectionInfo !== connectionInfoString) {
+        dataSource.connectionInfo = connectionInfoString;
+        hasChanges = true;
+      }
+    }
+
+    if (!hasChanges) {
+      return dataSource;
+    }
 
     const updated = await this.dataSourceRepository.save(dataSource);
 
@@ -92,7 +100,10 @@ export class DataSourceService {
         changedById,
         DataSourceChange.UpdatedDataSource,
         oldValues,
-        { protocol: dto.protocol, connectionInfo: dto.connectionInfo },
+        {
+          protocol: dto.protocol || dataSource.protocol,
+          connectionInfo: dto.connectionInfo || JSON.parse(dataSource.connectionInfo) as Record<string, unknown>,
+        },
       ),
     );
 

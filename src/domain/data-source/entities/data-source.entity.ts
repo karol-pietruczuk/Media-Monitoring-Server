@@ -30,6 +30,13 @@ export class DataSource {
   })
   createdAt!: Date;
 
+  @Column('datetime2', {
+    name: 'updatedAt',
+    default: () => 'getdate()',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt!: Date;
+
   @OneToMany(
     () => PulseDataChannel,
     (pulseDataChannel) => pulseDataChannel.dataSource,
