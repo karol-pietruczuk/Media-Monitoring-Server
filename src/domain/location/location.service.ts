@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -6,6 +10,11 @@ import { Location } from './entities/location.entity';
 import { LocationUpdatedEvent } from './events/location-updated.event';
 import { LocationChange } from '../../core/enums/location-change.enum';
 import { FindAllLocationDto } from './dto/find-all-location.dto';
+
+interface IDatabaseError extends Error {
+  code?: string;
+  number?: number;
+}
 
 @Injectable()
 export class LocationService {
@@ -27,7 +36,6 @@ export class LocationService {
 
     const savedLocation = await this.locationRepository.save(location);
 
-    // Emitujemy zdarzenie utworzenia nowej lokalizacji
     this.eventEmitter.emit(
       'location.updated',
       new LocationUpdatedEvent(
@@ -46,7 +54,6 @@ export class LocationService {
     const { page = 1, limit = 20, search, sortBy = 'createdAt' } = dto;
     const skip = (page - 1) * limit;
 
-    // Budujemy dynamiczny warunek WHERE dla wyszukiwania tekstowego
     const whereCondition = search
       ? [
           { mainLocation: ILike(`%${search}%`) },
@@ -54,9 +61,11 @@ export class LocationService {
         ]
       : {};
 
+    const order: Record<string, 'ASC' | 'DESC'> = { [sortBy]: 'ASC' };
+
     return this.locationRepository.find({
       where: whereCondition,
-      order: { [sortBy]: 'ASC' }, // Sortowanie dynamiczne po zdefiniowanej kolumnie
+      order,
       skip: skip,
       take: limit,
     });
@@ -74,39 +83,30 @@ export class LocationService {
 
   async update(
     id: number,
-    mainLocation: string | undefined, // Zmiana typu na opcjonalny string
-    subLocation: string | null | undefined, // Zmiana typu na opcjonalny string/null
+    mainLocation: string | undefined,
+    subLocation: string | null | undefined,
     changedById: number,
   ): Promise<Location> {
     const location = await this.findById(id);
-
     const oldValues = {
       mainLocation: location.mainLocation,
       subLocation: location.subLocation,
     };
 
-    // Przypisujemy nową wartość tylko wtedy, gdy została jawnie przekazana w DTO
-    const newValues = {
-      mainLocation:
-        mainLocation !== undefined ? mainLocation : location.mainLocation,
-      subLocation:
-        subLocation !== undefined ? subLocation : location.subLocation,
-    };
-
-    // Jeśli po analizie nic się nie zmieniło, przerywamy zapis
-    if (
-      oldValues.mainLocation === newValues.mainLocation &&
-      oldValues.subLocation === newValues.subLocation
-    ) {
-      return location;
+    let hasChanges = false;
+    if (mainLocation !== undefined && mainLocation !== location.mainLocation) {
+      location.mainLocation = mainLocation;
+      hasChanges = true;
+    }
+    if (subLocation !== undefined && subLocation !== location.subLocation) {
+      location.subLocation = subLocation;
+      hasChanges = true;
     }
 
-    location.mainLocation = newValues.mainLocation;
-    location.subLocation = newValues.subLocation;
+    if (!hasChanges) return location;
 
     const updatedLocation = await this.locationRepository.save(location);
 
-    // Emitujemy zdarzenie edycji z precyzyjnymi danymi różnicowymi
     this.eventEmitter.emit(
       'location.updated',
       new LocationUpdatedEvent(
@@ -114,7 +114,10 @@ export class LocationService {
         changedById,
         LocationChange.UpdatedLocation,
         oldValues,
-        newValues,
+        {
+          mainLocation: location.mainLocation,
+          subLocation: location.subLocation,
+        },
       ),
     );
 
@@ -123,16 +126,22 @@ export class LocationService {
 
   async remove(id: number, changedById: number): Promise<void> {
     const location = await this.findById(id);
-
     const oldValues = {
       mainLocation: location.mainLocation,
       subLocation: location.subLocation,
     };
 
-    // Twarde usunięcie z bazy danych MSSQL
-    await this.locationRepository.remove(location);
+    try {
+      await this.locationRepository.remove(location);
+    } catch (error: unknown) {
+      if (this.isForeignKeyConstraintError(error)) {
+        throw new ConflictException(
+          'Nie można usunąć lokalizacji, ponieważ są do niej przypisane liczniki.',
+        );
+      }
+      throw error;
+    }
 
-    // Emitujemy zdarzenie usunięcia lokalizacji (w bazie historycznej zostanie ślad)
     this.eventEmitter.emit(
       'location.updated',
       new LocationUpdatedEvent(
@@ -143,5 +152,15 @@ export class LocationService {
         {},
       ),
     );
+  }
+
+  private isForeignKeyConstraintError(error: unknown): boolean {
+    const dbError = error as IDatabaseError;
+    const isMssqlConstraint =
+      dbError.code === 'EREQUEST' || dbError.number === 547;
+    const hasForeignKeyMessage =
+      error instanceof Error && error.message.includes('FOREIGN KEY');
+
+    return !!(isMssqlConstraint || hasForeignKeyMessage);
   }
 }
