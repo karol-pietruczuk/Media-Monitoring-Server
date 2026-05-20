@@ -3,7 +3,6 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   Index,
 } from 'typeorm';
 import { UserRole } from '../../../core/enums/user-role.enum';
@@ -39,7 +38,4 @@ export class User {
 
   @CreateDateColumn({ type: 'datetime2' })
   createdAt!: Date;
-
-  @UpdateDateColumn({ type: 'datetime2' })
-  updatedAt!: Date;
 }
