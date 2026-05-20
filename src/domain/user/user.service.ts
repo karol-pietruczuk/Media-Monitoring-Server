@@ -125,44 +125,26 @@ export class UserService {
   ): Promise<User> {
     const user = await this.findById(id);
 
-    if (dto.email && dto.email !== user.email) {
-      const existingUser = await this.userRepository.findOne({
-        where: { email: dto.email },
-      });
-      if (existingUser) {
-        throw new ConflictException(
-          `Użytkownik o adresie email ${dto.email} już istnieje.`,
-        );
-      }
-    }
-
+    // Przechowywanie starych wartości do audytu
     const oldValues = {
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      role: user.role,
     };
 
-    user.email = dto.email ?? user.email;
-    user.firstName = dto.firstName ?? user.firstName;
-    user.lastName = dto.lastName ?? user.lastName;
-
-    if (
-      oldValues.email === user.email &&
-      oldValues.firstName === user.firstName &&
-      oldValues.lastName === user.lastName
-    ) {
-      return user;
-    }
-
+    // Aktualizacja encji
+    Object.assign(user, dto);
     const updatedUser = await this.userRepository.save(user);
 
+    // Emisja zdarzenia po udanym zapisie
     this.eventEmitter.emit(
       'user.updated',
-      new UserUpdatedEvent(id, changedById, UserChange.UpdatedUser, oldValues, {
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-      }),
+      new UserUpdatedEvent(
+        id,
+        changedById,
+        UserChange.UpdatedUser, // Upewnij się, że ten Enum istnieje
+        oldValues,
+        { email: updatedUser.email, role: updatedUser.role },
+      ),
     );
 
     return updatedUser;
@@ -180,10 +162,16 @@ export class UserService {
 
     const isSelfUpdate = requesterId === id;
     if (isSelfUpdate) {
-      const [salt, key] = user.passwordHash.split(':');
+      // Bezpieczne rozbicie stringa
+      const parts = user.passwordHash.split(':');
+      if (parts.length !== 2)
+        throw new Error('Nieprawidłowy format hash hasła.');
+
+      const [salt, key] = parts;
       const hashedBuffer = scryptSync(oldPassword, salt, 64);
       const keyBuffer = Buffer.from(key, 'hex');
 
+      // timingSafeEqual wymaga bufferów o tej samej długości
       if (!timingSafeEqual(hashedBuffer, keyBuffer)) {
         throw new UnauthorizedException('Niepoprawne aktualne hasło.');
       }
@@ -205,7 +193,7 @@ export class UserService {
         user.id,
         changedById,
         UserChange.UpdatedUser,
-        { passwordChanged: isSelfUpdate ? true : false },
+        { passwordChanged: isSelfUpdate }, // Type inferred as boolean
         { passwordChanged: true },
       ),
     );
