@@ -12,7 +12,9 @@ export class DataSourceHistoryListener {
     private readonly historyRepository: Repository<DataSourceHistory>,
   ) {}
 
-  @OnEvent('data-source.updated', { async: true })
+  // Zdjęto flagę async: true – zdarzenie wykonuje się synchronicznie w cyklu żądania,
+  // zabezpieczając system przed przerwaniem zapisu logu audytowego przy awarii mikroprocesu.
+  @OnEvent('data-source.updated')
   async handleDataSourceUpdated(event: DataSourceUpdatedEvent): Promise<void> {
     const history = this.historyRepository.create({
       dataSourceId: event.dataSourceId,
@@ -27,7 +29,6 @@ export class DataSourceHistoryListener {
           ? JSON.stringify(event.newValues)
           : null,
     });
-
     await this.historyRepository.save(history);
   }
 }
