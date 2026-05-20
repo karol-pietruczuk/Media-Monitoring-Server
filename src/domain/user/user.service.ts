@@ -2,15 +2,17 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from './entities/user.entity';
 import { UserRole } from '../../core/enums/user-role.enum';
 import { UserUpdatedEvent } from './events/user-updated.event';
 import { UserChange } from '../../core/enums/user-change.enum';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -37,8 +39,9 @@ export class UserService {
       );
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(passwordPlain, salt);
+    const salt = randomBytes(16).toString('hex');
+    const derivedKey = scryptSync(passwordPlain, salt, 64);
+    const passwordHash = `${salt}:${derivedKey.toString('hex')}`;
 
     const user = this.userRepository.create({
       email,
@@ -113,6 +116,124 @@ export class UserService {
     );
 
     return updatedUser;
+  }
+
+  async update(
+    id: number,
+    dto: UpdateUserDto,
+    changedById: number,
+  ): Promise<User> {
+    const user = await this.findById(id);
+
+    if (dto.email && dto.email !== user.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: dto.email },
+      });
+      if (existingUser) {
+        throw new ConflictException(
+          `Użytkownik o adresie email ${dto.email} już istnieje.`,
+        );
+      }
+    }
+
+    const oldValues = {
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    };
+
+    user.email = dto.email ?? user.email;
+    user.firstName = dto.firstName ?? user.firstName;
+    user.lastName = dto.lastName ?? user.lastName;
+
+    if (
+      oldValues.email === user.email &&
+      oldValues.firstName === user.firstName &&
+      oldValues.lastName === user.lastName
+    ) {
+      return user;
+    }
+
+    const updatedUser = await this.userRepository.save(user);
+
+    this.eventEmitter.emit(
+      'user.updated',
+      new UserUpdatedEvent(id, changedById, UserChange.UpdatedUser, oldValues, {
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+      }),
+    );
+
+    return updatedUser;
+  }
+
+  async changePassword(
+    id: number,
+    oldPassword: string,
+    newPassword: string,
+    changedById: number,
+    requesterId: number,
+    requesterRole: UserRole,
+  ): Promise<void> {
+    const user = await this.findById(id);
+
+    const isSelfUpdate = requesterId === id;
+    if (isSelfUpdate) {
+      const [salt, key] = user.passwordHash.split(':');
+      const hashedBuffer = scryptSync(oldPassword, salt, 64);
+      const keyBuffer = Buffer.from(key, 'hex');
+
+      if (!timingSafeEqual(hashedBuffer, keyBuffer)) {
+        throw new UnauthorizedException('Niepoprawne aktualne hasło.');
+      }
+    } else if (requesterRole !== UserRole.Admin) {
+      throw new UnauthorizedException(
+        'Nie masz uprawnień do zmiany hasła innego użytkownika.',
+      );
+    }
+
+    const salt = randomBytes(16).toString('hex');
+    const derivedKey = scryptSync(newPassword, salt, 64);
+    user.passwordHash = `${salt}:${derivedKey.toString('hex')}`;
+
+    await this.userRepository.save(user);
+
+    this.eventEmitter.emit(
+      'user.updated',
+      new UserUpdatedEvent(
+        user.id,
+        changedById,
+        UserChange.UpdatedUser,
+        { passwordChanged: isSelfUpdate ? true : false },
+        { passwordChanged: true },
+      ),
+    );
+  }
+
+  async resetPassword(
+    id: number,
+    newPassword: string,
+    changedById: number,
+  ): Promise<void> {
+    const user = await this.findById(id);
+
+    const salt = randomBytes(16).toString('hex');
+    const derivedKey = scryptSync(newPassword, salt, 64);
+    user.passwordHash = `${salt}:${derivedKey.toString('hex')}`;
+
+    await this.userRepository.save(user);
+
+    this.eventEmitter.emit(
+      'user.updated',
+      new UserUpdatedEvent(
+        user.id,
+        changedById,
+        UserChange.UpdatedUser,
+        { passwordReset: true },
+        { passwordReset: true },
+      ),
+    );
   }
 
   async deactivate(id: number, changedById: number): Promise<void> {
