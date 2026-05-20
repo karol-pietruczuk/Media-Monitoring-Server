@@ -12,7 +12,7 @@ export class LocationHistoryListener {
     private readonly historyRepository: Repository<LocationHistory>,
   ) {}
 
-  @OnEvent('location.updated', { async: true })
+  @OnEvent('location.updated') // Zmieniono na synchroniczne dla spójności
   async handleLocationUpdatedEvent(event: LocationUpdatedEvent): Promise<void> {
     const history = this.historyRepository.create({
       locationId: event.locationId,
@@ -27,7 +27,6 @@ export class LocationHistoryListener {
           ? JSON.stringify(event.newValues)
           : null,
     });
-
     await this.historyRepository.save(history);
   }
 }
