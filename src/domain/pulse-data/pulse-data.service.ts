@@ -109,10 +109,13 @@ export class PulseDataService {
     const oldValues = {
       meterId: channel.meter.id,
       dataSourceId: channel.dataSource.id,
-      dataMappingInfo: JSON.parse(channel.dataMappingInfo) as Record<
-        string,
-        unknown
-      >,
+      dataMappingInfo: (() => {
+        try {
+          return JSON.parse(channel.dataMappingInfo) as Record<string, unknown>;
+        } catch {
+          return {};
+        }
+      })(),
     };
 
     // Twarde usunięcie z bazy operacyjnej MSSQL
