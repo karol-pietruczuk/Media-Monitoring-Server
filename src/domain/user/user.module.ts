@@ -22,8 +22,8 @@ import { UserHistoryListener } from './listeners/user-history.listener';
     UserHistoryListener,
   ],
   exports: [
-    // Eksportujemy UserService, aby moduł uwierzytelniania (features/auth)
-    // mógł weryfikować login i hasło podczas generowania tokenów JWT
+    // Eksportujemy UserService i TypeOrmModule, żeby moduły zależne mogły w razie potrzeby wstrzykiwać serwis lub repository
+    TypeOrmModule,
     UserService,
   ],
 })
