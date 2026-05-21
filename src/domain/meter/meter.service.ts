@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -126,7 +130,22 @@ export class MeterService {
       unit: meter.unit,
     };
 
-    await this.meterRepository.remove(meter);
+    try {
+      await this.meterRepository.remove(meter);
+    } catch (error: unknown) {
+      // Bezpieczne przechwycenie błędu naruszenia klucza obcego (FK Constraint)
+      const sqlError = error as Error & { code?: string; number?: number };
+      if (
+        sqlError.code === 'EREQUEST' ||
+        sqlError.number === 547 ||
+        (error instanceof Error && error.message.includes('FOREIGN KEY'))
+      ) {
+        throw new ConflictException(
+          'Nie można usunąć licznika, ponieważ posiada on przypisane pomiary, kalibracje lub kanały danych.',
+        );
+      }
+      throw error;
+    }
 
     this.eventEmitter.emit(
       'meter.updated',

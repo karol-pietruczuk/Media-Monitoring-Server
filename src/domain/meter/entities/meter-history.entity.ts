@@ -21,7 +21,7 @@ export class MeterHistory {
   meterId!: number;
 
   @Column({ type: 'int', name: 'changedById', nullable: true })
-  changedById!: number | null; // Śledzenie zalogowanego użytkownika
+  changedById!: number | null;
 
   @Column({ type: 'nvarchar', name: 'meterChange', length: 50 })
   meterChange!: MeterChange;
@@ -32,7 +32,7 @@ export class MeterHistory {
     name: 'oldValues',
     nullable: true,
   })
-  oldValues!: string | null;
+  oldValues!: string | null; // <-- TUTAJ dodaj | null
 
   @Column({
     type: 'nvarchar',
@@ -40,7 +40,7 @@ export class MeterHistory {
     name: 'newValues',
     nullable: true,
   })
-  newValues!: string | null;
+  newValues!: string | null; // <-- TUTAJ dodaj | null
 
   @CreateDateColumn({ type: 'datetime2', name: 'createdAt' })
   createdAt!: Date;
