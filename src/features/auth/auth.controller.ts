@@ -1,5 +1,6 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto'; // Import nowego DTO
 
 @Controller('auth')
 export class AuthController {
@@ -7,10 +8,8 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body('email') email: string,
-    @Body('password') passwordPlain: string,
-  ) {
-    return this.authService.login(email, passwordPlain);
+  async login(@Body() dto: LoginDto) {
+    // Walidacja zadziała automatycznie
+    return this.authService.login(dto.email, dto.password);
   }
 }

@@ -22,7 +22,12 @@ export class AuthService {
     }
 
     // Weryfikacja hasła skrótem kryptograficznym scrypt
-    const [salt, key] = user.passwordHash.split(':');
+    const parts = user.passwordHash.split(':');
+    if (parts.length !== 2) {
+      throw new UnauthorizedException('Niepoprawny e-mail lub hasło.');
+      // Intencjonalnie maskujemy błąd struktury bazy danych dla klienta
+    }
+    const [salt, key] = parts;
     const hashedBuffer = scryptSync(passwordPlain, salt, 64);
     const keyBuffer = Buffer.from(key, 'hex');
 
