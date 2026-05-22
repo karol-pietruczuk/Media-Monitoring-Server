@@ -16,6 +16,7 @@ import { OpcUaModule } from './infrastructure/opcua/opcua.module';
 import { UserModule } from './domain/user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './features/auth/auth.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuthModule } from './features/auth/auth.module';
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(), // <-- TO AKTYWUJE WORKERA I CRONY W CAŁEJ APLIKACJI
     (
       EventEmitterModule as unknown as { forRoot: () => DynamicModule }
     ).forRoot(),
@@ -31,11 +33,11 @@ import { AuthModule } from './features/auth/auth.module';
     MeterModule,
     PulseDataModule,
     TotalDataModule,
+    UserModule,
+    AuthModule,
     DataSyncModule,
     DataBaseModule,
     OpcUaModule,
-    UserModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataBaseService, LocationService],

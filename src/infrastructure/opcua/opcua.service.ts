@@ -33,7 +33,6 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
     const allReadings: IFlatReadingResult[] = [];
 
     try {
-      // Odczytujemy bezpieczny, główny węzeł bazy danych PLC
       const dataValue = await session.read({
         nodeId: mappingInfo.nodeId,
         attributeId: 13,
@@ -52,18 +51,20 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
         return [];
       }
 
-      // Iterujemy po głównej tablicy 100 liczników przesłanej z PLC
       for (const meterStructure of rawData as Record<string, unknown>[]) {
-        // Bezpośredni dostęp do ID oraz tablicy odczytów z pominięciem refleksji lintera
         const plcMeterId = meterStructure[mappingInfo.meterIdPath];
         const recordsArray = meterStructure[mappingInfo.extractionPath];
 
-        if (typeof plcMeterId !== 'number' || !Array.isArray(recordsArray)) {
-          continue; // Pomija uszkodzone struktury i przechodzi do kolejnego licznika
-        }
+        if (typeof plcMeterId !== 'number') continue;
 
-        // Iterujemy po tablicy 30 zestawów minutowych dla danego licznika
-        for (const record of recordsArray as Record<string, unknown>[]) {
+        // Jeśli to tablica – bierzemy wszystko (po slice), jeśli pojedynczy obiekt – traktujemy jak tablicę 1-elementową
+        const recordsToProcess = Array.isArray(recordsArray)
+          ? recordsArray.slice(mappingInfo.startIndex ?? 0)
+          : recordsArray
+            ? [recordsArray]
+            : [];
+
+        for (const record of recordsToProcess as Record<string, unknown>[]) {
           const rawValue = record[mappingInfo.valuePath];
           const rawTimestamp = record[mappingInfo.timestampPath];
 
@@ -73,19 +74,17 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
               : (rawValue as number);
           let parsedTimestamp: Date | null = null;
 
-          // Bezpieczne parsowanie daty z ucinaniem mikrosekund Siemens
           if (typeof rawTimestamp === 'string') {
-            let isoFriendlyStr = rawTimestamp.trim().replace(' ', 'T');
-            isoFriendlyStr = isoFriendlyStr.replace(/(\.\d{3})\d+/, '$1');
-            if (!isoFriendlyStr.endsWith('Z')) {
-              isoFriendlyStr += 'Z';
-            }
+            let isoFriendlyStr = rawTimestamp
+              .trim()
+              .replace(' ', 'T')
+              .replace(/(\.\d{3})\d+/, '$1');
+            if (!isoFriendlyStr.endsWith('Z')) isoFriendlyStr += 'Z';
             parsedTimestamp = new Date(isoFriendlyStr);
           } else if (rawTimestamp instanceof Date) {
             parsedTimestamp = rawTimestamp;
           }
 
-          // Walidacja poprawności danych przed dodaniem do paczki zbiorczej
           if (
             typeof parsedValue === 'number' &&
             !isNaN(parsedValue) &&
@@ -113,9 +112,6 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
     }
   }
 
-  // Upewnij się, że na samej górze pliku importujesz dodatkowo: "extra"
-  // import { OPCUAClient, ClientSession, ... } from 'node-opcua';
-
   private async getOrCreateSession(
     config: OpcUaConnectionDto,
   ): Promise<ClientSession> {
@@ -133,7 +129,6 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
       MessageSecurityMode[
         config.securityMode as keyof typeof MessageSecurityMode
       ] ?? MessageSecurityMode.None;
-
     const securityPolicy =
       SecurityPolicy[config.securityPolicy as keyof typeof SecurityPolicy] ??
       SecurityPolicy.None;
@@ -158,32 +153,20 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
 
     const session = await client.createSession(userOptions);
 
-    // --- KOMPLETNE ROZWIĄZANIE DLA STRUKTUR I UDT SIEMENS PLC ---
-    // --- KOMPLETNE ROZWIĄZANIE DLA STRUKTUR I UDT SIEMENS PLC ---
     try {
-      this.logger.log('Loading Siemens Namespaces & DataType Dictionaries...');
-
-      // 1. Odczytujemy indeksy przestrzeni nazw
       await session.readNamespaceArray();
-
-      // 2. WYMUSZAMY REJESTRACJĘ EXTRA TYPÓW (UDT)
-      // Natywna metoda w nowym node-opcua, która pod spodem sama zarządza
-      // managerami i strategiami dla ExtensionObjects
       await session.extractNamespaceDataType();
     } catch (extraTypeError) {
       this.logger.warn(
         `DataType loading notice: ${extraTypeError instanceof Error ? extraTypeError.message : String(extraTypeError)}`,
       );
     }
-    // -------------------------------------------------------------
-    // -------------------------------------------------------------
 
     this.sessionsPool.set(config.endpointUrl, {
       client,
       session,
       lastUsed: new Date(),
     });
-
     return session;
   }
 
@@ -193,19 +176,13 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
       try {
         await cached.session.close();
         await cached.client.disconnect();
-      } catch {
-        // Ignorujemy błędy podczas zamykania zerwanego lub martwego połączenia
       } finally {
         this.sessionsPool.delete(endpointUrl);
-        this.logger.warn(
-          `Session for ${endpointUrl} has been removed from pool.`,
-        );
       }
     }
   }
 
   async onModuleDestroy() {
-    this.logger.log('Closing all active OPC-UA sessions in the pool...');
     for (const endpointUrl of this.sessionsPool.keys()) {
       await this.invalidateSession(endpointUrl);
     }

@@ -1,6 +1,6 @@
 export enum DataSourceProtocol {
-  Opcua,
-  ModbusTcp,
-  Mqtt,
-  Http,
+  Opcua = 'Opcua',
+  ModbusTcp = 'ModbusTcp',
+  Mqtt = 'Mqtt',
+  Http = 'Http',
 }

@@ -26,3 +26,5 @@ export const dataSourceOptions: DataSourceOptions = {
 
 const AppDataSource = new DataSource(dataSourceOptions);
 export default AppDataSource;
+//npm run migration:generate -- src/infrastructure/database/migrations/Init
+//npm run migration:run

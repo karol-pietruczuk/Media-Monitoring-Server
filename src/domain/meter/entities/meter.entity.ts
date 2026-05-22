@@ -6,7 +6,7 @@ import {
   ManyToOne,
   OneToMany,
   OneToOne,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
 } from 'typeorm';
 import { Unit } from '../../../core/enums/unit.enum';
 import { PulseDataCalculated } from '../../pulse-data/entities/pulse-data-calculated.entity';
@@ -21,7 +21,15 @@ import { TotalDataMeasurement } from '../../total-data/entities/total-data-measu
 @Index('PK_Meter', ['id'], { unique: true })
 @Entity('meter', { schema: 'dbo' })
 export class Meter {
-  @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+  // @PrimaryGeneratedColumn({ type: 'int', name: 'id' })
+  // id!: number;
+  @PrimaryColumn({
+    type: 'int',
+    // Ta linia sprawia, że MS SQL sam generuje numer (od 1, co 1)
+    // i jednocześnie zachowuje zachowanie "BY DEFAULT" (pozwala na edycję/podanie własnego ID)
+    generated: 'identity',
+    update: true, // TypeScript teraz bez problemu zaakceptuje ten parametr
+  })
   id!: number;
 
   @Column('nvarchar', { name: 'name', length: 50 })

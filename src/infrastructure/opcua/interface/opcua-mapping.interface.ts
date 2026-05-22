@@ -4,5 +4,6 @@ export interface IOpcUaBulkMapping {
   extractionPath: string;
   valuePath: string;
   timestampPath: string;
-  defaultMeterId?: number; // Opcjonalne pole używane tylko przy odczycie pojedynczych wartości
+  defaultMeterId?: number;
+  startIndex?: number;
 }

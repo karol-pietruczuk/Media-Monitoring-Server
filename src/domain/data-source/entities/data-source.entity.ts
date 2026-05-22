@@ -8,6 +8,7 @@ import {
 import type { DataSourceProtocol } from '../../../core/enums/data-source-protocol.enum';
 import { PulseDataChannel } from '../../pulse-data/entities/pulse-data-channel.entity';
 import { TotalDataChannel } from '../../total-data/entities/total-data-channel.entity';
+import { MAX } from 'class-validator';
 
 @Index('PK_DATA_SOURCE', ['id'], { unique: true })
 @Entity('dataSource', { schema: 'dbo' })
@@ -18,7 +19,7 @@ export class DataSource {
   @Column('nvarchar', { name: 'protocol', length: 30 })
   protocol!: DataSourceProtocol;
 
-  @Column('nvarchar', { name: 'connectionInfo', length: 120 })
+  @Column('nvarchar', { name: 'connectionInfo', length: MAX })
   connectionInfo!: string;
 
   @Column('bit', { name: 'isActive', default: true }) // W MSSQL bit to boolean (1 = true, 0 = false)
