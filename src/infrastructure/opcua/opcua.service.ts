@@ -129,12 +129,14 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
       `Establishing new OPC-UA connection to: ${config.endpointUrl}`,
     );
 
-    const securityMode = MessageSecurityMode[
-      config.securityMode || 'None'
-    ] as unknown as MessageSecurityMode;
-    const securityPolicy = SecurityPolicy[
-      config.securityPolicy || 'None'
-    ] as unknown as SecurityPolicy;
+    const securityMode =
+      MessageSecurityMode[
+        config.securityMode as keyof typeof MessageSecurityMode
+      ] ?? MessageSecurityMode.None;
+
+    const securityPolicy =
+      SecurityPolicy[config.securityPolicy as keyof typeof SecurityPolicy] ??
+      SecurityPolicy.None;
 
     const client = OPCUAClient.create({
       requestedSessionTimeout: 60000,
@@ -157,6 +159,7 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
     const session = await client.createSession(userOptions);
 
     // --- KOMPLETNE ROZWIĄZANIE DLA STRUKTUR I UDT SIEMENS PLC ---
+    // --- KOMPLETNE ROZWIĄZANIE DLA STRUKTUR I UDT SIEMENS PLC ---
     try {
       this.logger.log('Loading Siemens Namespaces & DataType Dictionaries...');
 
@@ -164,13 +167,15 @@ export class OpcUaService implements IDataProvider, OnModuleDestroy {
       await session.readNamespaceArray();
 
       // 2. WYMUSZAMY REJESTRACJĘ EXTRA TYPÓW (UDT)
-      // Silnik node-opcua przeskanuje serwer pod kątem niestandardowych struktur (ExtensionObjects)
-      // i automatycznie zbuduje dla nich wewnętrzne dekodery binarne w locie.
+      // Natywna metoda w nowym node-opcua, która pod spodem sama zarządza
+      // managerami i strategiami dla ExtensionObjects
+      await session.extractNamespaceDataType();
     } catch (extraTypeError) {
       this.logger.warn(
         `DataType loading notice: ${extraTypeError instanceof Error ? extraTypeError.message : String(extraTypeError)}`,
       );
     }
+    // -------------------------------------------------------------
     // -------------------------------------------------------------
 
     this.sessionsPool.set(config.endpointUrl, {
