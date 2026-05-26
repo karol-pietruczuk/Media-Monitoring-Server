@@ -4,11 +4,11 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PulseDataChannel } from './entities/pulse-data-channel.entity';
 import { CreatePulseChannelDto } from './dto/create-pulse-channel.dto';
+import { UpdatePulseChannelDto } from './dto/update-pulse-channel.dto';
 import { PulseChannelUpdatedEvent } from './events/pulse-channel-updated.event';
-import { PulseDataChannelChange } from '../../core/enums/pulse-data-channel-change.enum';
 import { Meter } from '../meter/entities/meter.entity';
 import { DataSource } from '../data-source/entities/data-source.entity';
-import { UpdatePulseChannelDto } from './dto/update-pulse-channel.dto';
+import { PulseDataChannelChange } from '../../core/enums/pulse-data-channel-change.enum';
 
 @Injectable()
 export class PulseDataService {
@@ -24,7 +24,6 @@ export class PulseDataService {
   ): Promise<PulseDataChannel> {
     const mappingInfoString = JSON.stringify(dto.dataMappingInfo);
 
-    // ROZWIĄZANIE BŁĘDU: Rzutujemy obiekt z id na pełny typ encji, co zamyka błąd ts(2740)
     const channel = this.channelRepository.create({
       meter: { id: dto.meterId } as Meter,
       dataSource: { id: dto.dataSourceId } as DataSource,
@@ -55,6 +54,7 @@ export class PulseDataService {
       where: { id },
       relations: ['dataSource', 'meter'],
     });
+
     if (!channel) {
       throw new NotFoundException(`Kanał impulsowy o ID ${id} nie istnieje.`);
     }
@@ -68,15 +68,14 @@ export class PulseDataService {
   ): Promise<PulseDataChannel> {
     const channel = await this.findChannelById(id);
 
+    // BEZPIECZNE AUDIO: Optional chaining zapobiega wywaleniu błędu aplikacji
     const oldValues = {
-      dataSourceId: channel.dataSource.id,
-      dataMappingInfo: JSON.parse(channel.dataMappingInfo) as Record<
-        string,
-        unknown
-      >,
+      dataSourceId: channel.dataSource?.id ?? null,
+      dataMappingInfo: channel.dataMappingInfo
+        ? (JSON.parse(channel.dataMappingInfo) as Record<string, unknown>)
+        : {},
     };
 
-    // Aktualizujemy tylko te pola, które zostały faktycznie przesłane w DTO
     if (dto.dataSourceId) {
       channel.dataSource = { id: dto.dataSourceId } as DataSource;
     }
@@ -106,28 +105,23 @@ export class PulseDataService {
   async removeChannel(id: number, changedById: number): Promise<void> {
     const channel = await this.findChannelById(id);
 
+    // BEZPIECZNE AUDIO: Zabezpieczenie przed usunięciem kaskadowym/pustymi relacjami
     const oldValues = {
-      meterId: channel.meter.id,
-      dataSourceId: channel.dataSource.id,
-      dataMappingInfo: (() => {
-        try {
-          return JSON.parse(channel.dataMappingInfo) as Record<string, unknown>;
-        } catch {
-          return {};
-        }
-      })(),
+      meterId: channel.meter?.id ?? null,
+      dataSourceId: channel.dataSource?.id ?? null,
+      dataMappingInfo: channel.dataMappingInfo
+        ? (JSON.parse(channel.dataMappingInfo) as Record<string, unknown>)
+        : {},
     };
 
-    // Twarde usunięcie z bazy operacyjnej MSSQL
     await this.channelRepository.remove(channel);
 
-    // Emitujemy zdarzenie usunięcia - log audytowy przetrwa w bazie historii!
     this.eventEmitter.emit(
       'pulse-channel.updated',
       new PulseChannelUpdatedEvent(
         id,
         changedById,
-        PulseDataChannelChange.DeletedPulseDataChannel, // Upewnij się, że masz to w swoim enumie
+        PulseDataChannelChange.DeletedPulseDataChannel,
         oldValues,
         {},
       ),
