@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm'; // Importujemy TYLKO Repository
+import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TotalDataChannel } from './entities/total-data-channel.entity';
 import { CreateTotalChannelDto } from './dto/create-total-channel.dto';
 import { UpdateTotalChannelDto } from './dto/update-total-channel.dto';
 import { TotalChannelUpdatedEvent } from './events/total-channel-updated.event';
 import { Meter } from '../meter/entities/meter.entity';
-import { DataSource } from '../data-source/entities/data-source.entity'; // KLUCZOWY POPRAWNY IMPORT TWOJEJ ENCJI
+import { DataSource } from '../data-source/entities/data-source.entity';
 import { TotalDataChannelChange } from '../../core/enums/total-data-channel-change.enum';
 
 @Injectable()
@@ -24,7 +24,6 @@ export class TotalDataService {
   ): Promise<TotalDataChannel> {
     const mappingInfoString = JSON.stringify(dto.dataMappingInfo);
 
-    // Po poprawie importu, asercja typu 'as DataSource' przechodzi bezbłędnie
     const channel = this.channelRepository.create({
       meter: { id: dto.meterId } as Meter,
       dataSource: { id: dto.dataSourceId } as DataSource,
@@ -51,7 +50,6 @@ export class TotalDataService {
   }
 
   async findChannelById(id: number): Promise<TotalDataChannel> {
-    // Upewniamy się, że wywołujemy findOne z poprawnym obiektem konfiguracyjnym 'where'
     const channel = await this.channelRepository.findOne({
       where: { id },
       relations: ['dataSource', 'meter'],
