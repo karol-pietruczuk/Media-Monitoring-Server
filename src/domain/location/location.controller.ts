@@ -11,9 +11,16 @@ import {
   Req,
   Query,
 } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { LocationService } from './location.service';
-import { Location } from './entities/location.entity';
 import { UserRole } from '../../core/enums/user-role.enum';
 import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../features/auth/guards/roles.guard';
@@ -21,74 +28,118 @@ import { Roles } from '../../features/auth/decorators/roles.decorator';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { FindAllLocationDto } from './dto/find-all-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
+import { LocationResponseDto } from './dto/location-response.dto';
+import { LocationMessageResponseDto } from './dto/location-message-response.dto';
 
-// Interfejs reprezentujący otypowany obiekt użytkownika wstrzyknięty przez JwtStrategy
-interface IRequestWithUser extends Request {
-  user: {
-    id: number;
-    email: string;
-    role: UserRole;
-  };
-}
-
+@ApiTags('Locations')
+@ApiBearerAuth()
 @Controller('locations')
-@UseGuards(JwtAuthGuard, RolesGuard) // Każdy endpoint domyślnie wymaga zalogowania tokenem JWT
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
   @Post()
   @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({ summary: 'Utworzenie nowej lokalizacji [OPERATOR, ADMIN]' })
+  @ApiCreatedResponse({
+    description: 'Lokalizacja została pomyślnie zarejestrowana.',
+    type: LocationResponseDto,
+  })
   async create(
-    @Body() dto: CreateLocationDto, // <-- Zmiana na całe DTO
-    @Req() req: IRequestWithUser,
-  ): Promise<Location> {
-    return this.locationService.create(
+    @Body() dto: CreateLocationDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<LocationResponseDto> {
+    const rawLocation = await this.locationService.create(
       dto.mainLocation,
       dto.subLocation,
       req.user.id,
     );
+    return rawLocation as LocationResponseDto;
   }
 
   @Get()
-  // Brak dekoratora @Roles sprawia, że każda zalogowana osoba (w tym VIEWER) ma dostęp
-  async findAll(@Query() query: FindAllLocationDto): Promise<Location[]> {
-    // Przekazujemy DTO z parametrami paginacji/wyszukiwania do serwisu
-    return this.locationService.findAll(query);
+  @ApiOperation({
+    summary: 'Pobranie przefiltrowanej listy lokalizacji z paginacją [WSZYSCY]',
+  })
+  @ApiOkResponse({
+    description:
+      'Zwraca przefiltrowaną listę lokalizacji na podstawie kryteriów query.',
+    type: [LocationResponseDto],
+  })
+  async findAll(
+    @Query() query: FindAllLocationDto,
+  ): Promise<LocationResponseDto[]> {
+    const rawLocations = await this.locationService.findAll(query);
+    return rawLocations as LocationResponseDto[];
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Location> {
-    return this.locationService.findById(id);
+  @ApiOperation({ summary: 'Pobranie szczegółów lokalizacji po ID [WSZYSCY]' })
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator lokalizacji',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Zwraca dane wybranej lokalizacji.',
+    type: LocationResponseDto,
+  })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<LocationResponseDto> {
+    const rawLocation = await this.locationService.findById(id);
+    return rawLocation as LocationResponseDto;
   }
 
   @Patch(':id')
   @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Aktualizacja parametrów lokalizacji [OPERATOR, ADMIN]',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator edytowanej lokalizacji',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Konfiguracja lokalizacji została pomyślnie zmodyfikowana.',
+    type: LocationResponseDto,
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateLocationDto, // <-- ZMIANA: podstawiamy dedykowane Update DTO zamiast Create DTO
-    @Req() req: IRequestWithUser,
-  ): Promise<Location> {
-    const loggedInUser = req.user;
-
-    // Ponieważ w UpdateLocationDto pola są opcjonalne (mogą być undefined),
-    // serwis powinien obsłużyć tylko te wartości, które faktycznie przyszły z frontendu.
-    return this.locationService.update(
+    @Body() dto: UpdateLocationDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<LocationResponseDto> {
+    const rawLocation = await this.locationService.update(
       id,
       dto.mainLocation,
       dto.subLocation ?? null,
-      loggedInUser.id,
+      req.user.id,
     );
+    return rawLocation as LocationResponseDto;
   }
 
   @Delete(':id')
-  @Roles(UserRole.Admin) // Wyłącznie główny ADMINISTRATOR może usunąć halę/lokalizację
+  @Roles(UserRole.Admin)
+  @ApiOperation({
+    summary: 'Trwałe usunięcie obszaru/lokalizacji z bazy [ADMIN]',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator usuwanej lokalizacji',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description:
+      'Lokalizacja została pomyślnie usunięta, brak powiązanych kluczy obcych.',
+    type: LocationMessageResponseDto,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: IRequestWithUser,
-  ): Promise<{ message: string }> {
-    const loggedInUser = req.user;
-    await this.locationService.remove(id, loggedInUser.id);
-
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<LocationMessageResponseDto> {
+    await this.locationService.remove(id, req.user.id);
     return {
       message:
         'Lokalizacja została pomyślnie usunięta, a operacja została zarejestrowana w bazie danych historii.',
