@@ -1,4 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
+// import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateMeterDto } from './create-meter.dto';
 
 const SafePartialType = PartialType as unknown as (

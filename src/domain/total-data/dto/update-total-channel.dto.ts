@@ -1,4 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
+// import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateTotalChannelDto } from './create-total-channel.dto';
 
 const SafePartialType = PartialType as unknown as (

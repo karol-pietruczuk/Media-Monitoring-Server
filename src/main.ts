@@ -9,6 +9,7 @@ async function bootstrap() {
     .setTitle('IoT Sync API')
     .setDescription('API do zarządzania synchronizacją liczników PLC')
     .setVersion('1.0')
+    .addBearerAuth() // <--- TO JEST WYMAGANE DO DZIAŁANIA KŁÓDECZKI
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

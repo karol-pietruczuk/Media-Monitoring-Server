@@ -1,4 +1,5 @@
-import { PartialType } from '@nestjs/mapped-types';
+// import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { CreateDataSourceDto } from './create-data-source.dto';
 
 // Oczyszczono z obejścia (hacku) "SafePartialType". Standardowe użycie PartialType z NestJS
