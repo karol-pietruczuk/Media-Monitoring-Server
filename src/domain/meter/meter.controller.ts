@@ -10,6 +10,15 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { MeterService } from './meter.service';
 import { CreateMeterDto } from './dto/create-meter.dto';
 import { UpdateMeterDto } from './dto/update-meter.dto';
@@ -17,13 +26,14 @@ import { CreateCalibrationDto } from './dto/create-calibration.dto';
 import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../features/auth/guards/roles.guard';
 import { Roles } from '../../features/auth/decorators/roles.decorator';
-import { Request } from 'express';
 import { UserRole } from '../../core/enums/user-role.enum';
+import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
+import { MeterResponseDto } from './dto/meter-response.dto';
+import { MeterMessageResponseDto } from './dto/meter-message-response.dto';
+import { CalibrationResponseDto } from './dto/meter-calibration-response.dto';
 
-interface IRequestWithUser extends Request {
-  user: { id: number; email: string; role: UserRole };
-}
-
+@ApiTags('Meters')
+@ApiBearerAuth()
 @Controller('meters')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MeterController {
@@ -31,36 +41,88 @@ export class MeterController {
 
   @Post()
   @Roles(UserRole.Operator, UserRole.Admin)
-  async create(@Body() dto: CreateMeterDto, @Req() req: IRequestWithUser) {
-    return this.meterService.create(dto, req.user.id);
+  @ApiOperation({
+    summary: 'Utworzenie nowego licznika pomiarowego [OPERATOR, ADMIN]',
+  })
+  @ApiCreatedResponse({
+    description: 'Licznik został pomyślnie zarejestrowany w systemie.',
+    type: MeterResponseDto,
+  })
+  async create(
+    @Body() dto: CreateMeterDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<MeterResponseDto> {
+    const rawMeter = await this.meterService.create(dto, req.user.id);
+    return rawMeter as MeterResponseDto;
   }
 
   @Get()
-  async findAll() {
-    return this.meterService.findAll();
+  @ApiOperation({
+    summary: 'Pobranie listy wszystkich liczników wraz z relacjami',
+  })
+  @ApiOkResponse({
+    description: 'Zwraca tablicę obiektów reprezentujących liczniki.',
+    type: [MeterResponseDto],
+  })
+  async findAll(): Promise<MeterResponseDto[]> {
+    const rawMeters = await this.meterService.findAll();
+    return rawMeters as MeterResponseDto[];
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.meterService.findById(id);
+  @ApiOperation({ summary: 'Pobranie szczegółowych danych jednego licznika' })
+  @ApiParam({ name: 'id', description: 'Identyfikator licznika', example: 1 })
+  @ApiOkResponse({
+    description: 'Znaleziono licznik o podanym identyfikatorze.',
+    type: MeterResponseDto,
+  })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<MeterResponseDto> {
+    const rawMeter = await this.meterService.findById(id);
+    return rawMeter as MeterResponseDto;
   }
 
   @Patch(':id')
   @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary:
+      'Aktualizacja parametrów strukturalnych licznika [OPERATOR, ADMIN]',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator edytowanego licznika',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Dane konfiguracji licznika zostały pomyślnie zaktualizowane.',
+    type: MeterResponseDto,
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMeterDto,
-    @Req() req: IRequestWithUser,
-  ) {
-    return this.meterService.update(id, dto, req.user.id);
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<MeterResponseDto> {
+    const rawMeter = await this.meterService.update(id, dto, req.user.id);
+    return rawMeter as MeterResponseDto;
   }
 
   @Delete(':id')
-  @Roles(UserRole.Admin) // Tylko główny ADMIN może całkowicie wykasować licznik pomiarowy
+  @Roles(UserRole.Admin)
+  @ApiOperation({ summary: 'Trwałe usunięcie licznika z systemu [ADMIN]' })
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator usuwanego licznika',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: 'Licznik został pomyślnie usunięty z bazy danych.',
+    type: MeterMessageResponseDto,
+  })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: IRequestWithUser,
-  ) {
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<MeterMessageResponseDto> {
     await this.meterService.remove(id, req.user.id);
     return {
       message:
@@ -70,10 +132,22 @@ export class MeterController {
 
   @Post('calibrations')
   @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary:
+      'Wprowadzenie nowego punktu kalibracyjnego / odczytu kontrolnego licznika [OPERATOR, ADMIN]',
+  })
+  @ApiCreatedResponse({
+    description: 'Punkt kalibracyjny został pomyślnie zarejestrowany.',
+    type: CalibrationResponseDto,
+  })
   async addCalibration(
     @Body() dto: CreateCalibrationDto,
-    @Req() req: IRequestWithUser,
-  ) {
-    return this.meterService.addCalibration(dto, req.user.id);
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<CalibrationResponseDto> {
+    const rawCalibration = await this.meterService.addCalibration(
+      dto,
+      req.user.id,
+    );
+    return rawCalibration as CalibrationResponseDto;
   }
 }
