@@ -88,12 +88,13 @@ export class UserService {
   }
 
   async findById(id: number): Promise<User> {
+    // Pobiera profil tylko wtedy, gdy użytkownik jest aktywny
     const user = await this.userRepository.findOne({
       where: { id, isActive: true },
     });
     if (!user) {
       throw new NotFoundException(
-        `Użytkownik o ID ${id} nie został znaleziony.`,
+        `Użytkownik o ID ${id} nie został znaleziony lub jest nieaktywny.`,
       );
     }
     return user;
@@ -103,8 +104,47 @@ export class UserService {
     return this.userRepository.findOne({ where: { email, isActive: true } });
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find({ where: { isActive: true } });
+  async findAll(includeInactive = false): Promise<User[]> {
+    if (includeInactive) {
+      return this.userRepository.find(); // Zwraca absolutnie wszystkich (dla Admina)
+    }
+    return this.userRepository.find({ where: { isActive: true } }); // Standardowy widok
+  }
+
+  async getMetrics(): Promise<{
+    total: number;
+    active: number;
+    inactive: number;
+    online: number;
+  }> {
+    const total = await this.userRepository.count();
+    const active = await this.userRepository.count({
+      where: { isActive: true },
+    });
+    const inactive = total - active;
+    const online = await this.userRepository.count({
+      where: { isLoggedIn: true, isActive: true },
+    });
+
+    return { total, active, inactive, online };
+  }
+
+  async getHistory(userId: number): Promise<any[]> {
+    // Sprawdzamy najpierw czy użytkownik w ogóle istnieje w bazie danych
+    const userExists = await this.userRepository.findOne({
+      where: { id: userId },
+    });
+    if (!userExists) {
+      throw new NotFoundException(
+        `Nie można pobrać historii. Użytkownik o ID ${userId} nie istnieje.`,
+      );
+    }
+
+    // Wykorzystujemy manager bazy danych, aby elastycznie odpytać tabelę historii (zgodnie z dialektem MSSQL)
+    return this.userRepository.manager.query(
+      `SELECT * FROM [user_history] WHERE [userId] = @0 ORDER BY [createdAt] DESC`,
+      [userId],
+    );
   }
 
   async updateRole(
@@ -145,7 +185,8 @@ export class UserService {
 
     const oldValues = {
       email: user.email,
-      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
 
     Object.assign(user, dto);
@@ -155,7 +196,8 @@ export class UserService {
       'user.updated',
       new UserUpdatedEvent(id, changedById, UserChange.UpdatedUser, oldValues, {
         email: updatedUser.email,
-        role: updatedUser.role,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
       }),
     );
 
@@ -250,6 +292,32 @@ export class UserService {
         { isActive: false },
       ),
     );
+  }
+
+  async activate(id: number, changedById: number): Promise<User> {
+    // Pobieramy użytkownika niezależnie od statusu isActive
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user)
+      throw new NotFoundException(
+        `Użytkownik o ID ${id} nie istnieje w bazie danych.`,
+      );
+
+    if (user.isActive) return user;
+
+    user.isActive = true;
+    const updatedUser = await this.userRepository.save(user);
+
+    this.eventEmitter.emit(
+      'user.updated',
+      new UserUpdatedEvent(
+        id,
+        changedById,
+        UserChange.UpdatedUser,
+        { isActive: false },
+        { isActive: true },
+      ),
+    );
+    return updatedUser;
   }
 
   async findByEmailWithPassword(email: string): Promise<User | null> {
