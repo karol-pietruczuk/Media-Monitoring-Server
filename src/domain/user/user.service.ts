@@ -22,6 +22,26 @@ export class UserService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  async updateSessionParams(
+    userId: number,
+    hashedRefreshToken: string | null,
+    isLoggedIn: boolean,
+  ): Promise<void> {
+    await this.userRepository.update(userId, {
+      hashedRefreshToken,
+      isLoggedIn,
+    });
+  }
+
+  async findByIdForSession(id: number): Promise<User | null> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.hashedRefreshToken')
+      .where('user.id = :id', { id })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .getOne();
+  }
+
   async create(
     email: string,
     passwordPlain: string,
@@ -53,7 +73,6 @@ export class UserService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Emitujemy zdarzenie utworzenia użytkownika
     this.eventEmitter.emit(
       'user.updated',
       new UserUpdatedEvent(
@@ -103,7 +122,6 @@ export class UserService {
     user.role = newRole;
     const updatedUser = await this.userRepository.save(user);
 
-    // Emitujemy zdarzenie zmiany roli
     this.eventEmitter.emit(
       'user.updated',
       new UserUpdatedEvent(
@@ -125,26 +143,20 @@ export class UserService {
   ): Promise<User> {
     const user = await this.findById(id);
 
-    // Przechowywanie starych wartości do audytu
     const oldValues = {
       email: user.email,
       role: user.role,
     };
 
-    // Aktualizacja encji
     Object.assign(user, dto);
     const updatedUser = await this.userRepository.save(user);
 
-    // Emisja zdarzenia po udanym zapisie
     this.eventEmitter.emit(
       'user.updated',
-      new UserUpdatedEvent(
-        id,
-        changedById,
-        UserChange.UpdatedUser, // Upewnij się, że ten Enum istnieje
-        oldValues,
-        { email: updatedUser.email, role: updatedUser.role },
-      ),
+      new UserUpdatedEvent(id, changedById, UserChange.UpdatedUser, oldValues, {
+        email: updatedUser.email,
+        role: updatedUser.role,
+      }),
     );
 
     return updatedUser;
@@ -162,7 +174,6 @@ export class UserService {
 
     const isSelfUpdate = requesterId === id;
     if (isSelfUpdate) {
-      // Bezpieczne rozbicie stringa
       const parts = user.passwordHash.split(':');
       if (parts.length !== 2)
         throw new Error('Nieprawidłowy format hash hasła.');
@@ -171,7 +182,6 @@ export class UserService {
       const hashedBuffer = scryptSync(oldPassword, salt, 64);
       const keyBuffer = Buffer.from(key, 'hex');
 
-      // timingSafeEqual wymaga bufferów o tej samej długości
       if (!timingSafeEqual(hashedBuffer, keyBuffer)) {
         throw new UnauthorizedException('Niepoprawne aktualne hasło.');
       }
@@ -193,7 +203,7 @@ export class UserService {
         user.id,
         changedById,
         UserChange.UpdatedUser,
-        { passwordChanged: isSelfUpdate }, // Type inferred as boolean
+        { passwordChanged: isSelfUpdate },
         { passwordChanged: true },
       ),
     );
@@ -230,7 +240,6 @@ export class UserService {
     user.isActive = false;
     await this.userRepository.save(user);
 
-    // Emitujemy zdarzenie dezaktywacji (soft-delete)
     this.eventEmitter.emit(
       'user.updated',
       new UserUpdatedEvent(
@@ -243,14 +252,10 @@ export class UserService {
     );
   }
 
-  /**
-   * Metoda stworzona specjalnie dla modułu Auth.
-   * Jawnie wyciąga passwordHash z bazy danych MSSQL.
-   */
   async findByEmailWithPassword(email: string): Promise<User | null> {
     return this.userRepository
       .createQueryBuilder('user')
-      .addSelect('user.passwordHash') // WYMUSZAMY pobranie ukrytego pola
+      .addSelect('user.passwordHash')
       .where('user.email = :email', { email })
       .andWhere('user.isActive = :isActive', { isActive: true })
       .getOne();

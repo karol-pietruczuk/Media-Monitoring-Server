@@ -17,8 +17,14 @@ export class User {
   @Index('UQ_users_email', { unique: true })
   email!: string;
 
-  @Column({ type: 'varchar', length: 255, select: false }) // Ukryte domyślnie dla całego systemu
+  @Column({ type: 'varchar', length: 255, select: false })
   passwordHash!: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  hashedRefreshToken!: string | null;
+
+  @Column({ type: 'bit', default: 0 })
+  isLoggedIn!: boolean;
 
   @Column({ type: 'nvarchar', length: 100 })
   firstName!: string;
@@ -33,7 +39,7 @@ export class User {
   })
   role!: UserRole;
 
-  @Column({ type: 'bit', default: 1 }) // W MSSQL 'bit' reprezentuje wartość boolean
+  @Column({ type: 'bit', default: 1 })
   isActive!: boolean;
 
   @CreateDateColumn({ type: 'datetime2' })
