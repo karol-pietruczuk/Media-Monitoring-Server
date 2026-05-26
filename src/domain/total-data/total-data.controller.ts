@@ -18,7 +18,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
-  ApiProperty,
 } from '@nestjs/swagger';
 import { TotalDataService } from './total-data.service';
 import { CreateTotalChannelDto } from './dto/create-total-channel.dto';
@@ -27,26 +26,9 @@ import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../features/auth/guards/roles.guard';
 import { Roles } from '../../features/auth/decorators/roles.decorator';
 import { UserRole } from '../../core/enums/user-role.enum';
-
-type AuthenticatedUser = {
-  id: number;
-  email: string;
-  role: UserRole;
-};
-
-// --- DTO ODPOWIEDZI DLA SWAGGERA ---
-class TotalDataChannelResponseDto {
-  @ApiProperty({ example: 1 }) id!: number;
-  @ApiProperty({ example: { id: 3 } }) meter!: { id: number };
-  @ApiProperty({ example: { id: 2 } }) dataSource!: { id: number };
-  @ApiProperty({ example: '{"register": 40001, "multiplier": 0.1}' })
-  dataMappingInfo!: string;
-}
-
-class ChannelMessageResponseDto {
-  @ApiProperty({ example: 'Kanał danych został pomyślnie usunięty.' })
-  message!: string;
-}
+import { TotalDataChannelMessageResponseDto } from './dto/total-data-channel-message-response.dto';
+import { TotalDataChannelResponseDto } from './dto/total-data-channel-response.dto';
+import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
 
 @ApiTags('Total Data Channels')
 @ApiBearerAuth()
@@ -133,12 +115,12 @@ export class TotalDataController {
   })
   @ApiOkResponse({
     description: 'Kanał został trwale usunięty z systemu.',
-    type: ChannelMessageResponseDto,
+    type: TotalDataChannelMessageResponseDto,
   })
   async removeChannel(
     @Param('id', ParseIntPipe) id: number,
     @Req() req: Request & { user: AuthenticatedUser },
-  ): Promise<ChannelMessageResponseDto> {
+  ): Promise<TotalDataChannelMessageResponseDto> {
     await this.totalDataService.removeChannel(id, req.user.id);
     return {
       message:

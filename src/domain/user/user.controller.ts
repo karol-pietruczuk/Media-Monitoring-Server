@@ -36,7 +36,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { UserMessageResponseDto } from './dto/user-message-response.dto';
 import { UserHistoryResponseDto } from './dto/user-history-response.dto';
 import { UserMetricsResponseDto } from './dto/user-metrics-response.dto';
-import { AuthenticatedUser } from '../../core/types/authenticated-user';
+import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
 
 @ApiTags('Users')
 @ApiBearerAuth()
