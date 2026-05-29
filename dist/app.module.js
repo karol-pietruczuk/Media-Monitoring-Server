@@ -29,6 +29,7 @@ const user_module_1 = require("./domain/user/user.module");
 const event_emitter_1 = require("@nestjs/event-emitter");
 const auth_module_1 = require("./features/auth/auth.module");
 const schedule_1 = require("@nestjs/schedule");
+const backup_module_1 = require("./features/backup/backup.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -51,6 +52,7 @@ exports.AppModule = AppModule = __decorate([
             data_sync_module_1.DataSyncModule,
             database_module_1.DataBaseModule,
             opcua_module_1.OpcUaModule,
+            backup_module_1.BackupModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, database_service_1.DataBaseService, location_service_1.LocationService],

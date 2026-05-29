@@ -17,6 +17,7 @@ import { UserModule } from './domain/user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './features/auth/auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BackupModule } from './features/backup/backup.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     DataSyncModule,
     DataBaseModule,
     OpcUaModule,
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [AppService, DataBaseService, LocationService],
