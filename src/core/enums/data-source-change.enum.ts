@@ -1,7 +1,7 @@
 export enum DataSourceChange {
-  CreatedDataSource,
-  UpdatedDataSource,
-  DeletedDataSource,
-  DeactivatedDataSource,
-  ActivatedDataSource,
+  CreatedDataSource = 'CreatedDataSource',
+  UpdatedDataSource = 'UpdatedDataSource',
+  DeletedDataSource = 'DeletedDataSource',
+  DeactivatedDataSource = 'DeactivatedDataSource',
+  ActivatedDataSource = 'ActivatedDataSource',
 }

@@ -1,6 +1,6 @@
 export enum UserChange {
-  CreatedUser,
-  UpdatedUser,
-  DeactivatedUser,
-  DeletedUser,
+  CreatedUser = 'CreatedUser',
+  UpdatedUser = 'UpdatedUser',
+  DeactivatedUser = 'DeactivatedUser',
+  DeletedUser = 'DeletedUser',
 }

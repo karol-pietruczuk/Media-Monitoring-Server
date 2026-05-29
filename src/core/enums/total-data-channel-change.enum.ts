@@ -1,5 +1,5 @@
 export enum TotalDataChannelChange {
-  CreatedTotalDataChannel,
-  UpdatedTotalDataChannel,
-  DeletedTotalDataChannel,
+  CreatedTotalDataChannel = 'CreatedTotalDataChannel',
+  UpdatedTotalDataChannel = 'UpdatedTotalDataChannel',
+  DeletedTotalDataChannel = 'DeletedTotalDataChannel',
 }

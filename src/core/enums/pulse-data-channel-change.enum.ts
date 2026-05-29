@@ -1,5 +1,5 @@
 export enum PulseDataChannelChange {
-  CreatedPulseDataChannel,
-  UpdatedPulseDataChannel,
-  DeletedPulseDataChannel,
+  CreatedPulseDataChannel = 'CreatedPulseDataChannel',
+  UpdatedPulseDataChannel = 'UpdatedPulseDataChannel',
+  DeletedPulseDataChannel = 'DeletedPulseDataChannel',
 }

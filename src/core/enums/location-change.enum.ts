@@ -1,5 +1,5 @@
 export enum LocationChange {
-  CreatedLocation,
-  UpdatedLocation,
-  DeletedLocation,
+  CreatedLocation = 'CreatedLocation',
+  UpdatedLocation = 'UpdatedLocation',
+  DeletedLocation = 'DeletedLocation',
 }

@@ -1,5 +1,5 @@
 export enum MeterCalibrationChange {
-  CreatedMeterCalibration,
-  UpdatedMeterCalibration,
-  DeletedMeterCalibration,
+  CreatedMeterCalibration = 'CreatedMeterCalibration',
+  UpdatedMeterCalibration = 'UpdatedMeterCalibration',
+  DeletedMeterCalibration = 'DeletedMeterCalibration',
 }

@@ -1,5 +1,5 @@
 export enum PulseDataMultiplierChange {
-  CreatedPulseDataMultiplier,
-  UpdatedPulseDataMultiplier,
-  DeletedPulseDataMultiplier,
+  CreatedPulseDataMultiplier = 'CreatedPulseDataMultiplier',
+  UpdatedPulseDataMultiplier = 'UpdatedPulseDataMultiplier',
+  DeletedPulseDataMultiplier = 'DeletedPulseDataMultiplier',
 }
