@@ -1,6 +1,18 @@
-import { IsDateString, IsInt, IsNotEmpty, IsNumber } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateCalibrationDto {
+  @ApiPropertyOptional({ description: 'Opcjonalne ID rekordu kalibracji.' })
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
   @IsInt()
   @IsNotEmpty()
   meterId!: number;

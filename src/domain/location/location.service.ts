@@ -10,6 +10,7 @@ import { Location } from './entities/location.entity';
 import { LocationUpdatedEvent } from './events/location-updated.event';
 import { LocationChange } from '../../core/enums/location-change.enum';
 import { FindAllLocationDto } from './dto/find-all-location.dto';
+import { CreateLocationDto } from './dto/create-location.dto';
 
 interface IDatabaseError extends Error {
   code?: string;
@@ -25,29 +26,51 @@ export class LocationService {
   ) {}
 
   async create(
-    mainLocation: string,
-    subLocation: string | null,
+    dto: CreateLocationDto & { id?: number }, // Przyjmuje całe DTO + opcjonalne ID z backupu
     changedById: number | null,
   ): Promise<Location> {
-    const location = this.locationRepository.create({
-      mainLocation,
-      subLocation,
-    });
+    let saved: Location;
 
-    const savedLocation = await this.locationRepository.save(location);
+    if (dto.id !== undefined) {
+      // Ścieżka dla modułu backupu (z jawnym ID dla MS SQL)
+      saved = await this.locationRepository.manager.transaction(async (tm) => {
+        const metadata = tm.getRepository(Location).metadata;
+        const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
 
+        await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
+
+        const location = tm.create(Location, {
+          id: dto.id,
+          mainLocation: dto.mainLocation,
+          subLocation: dto.subLocation,
+        });
+
+        const savedEntity = await tm.save(Location, location);
+        await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+        return savedEntity;
+      });
+    } else {
+      // Standardowa ścieżka aplikacji
+      const location = this.locationRepository.create({
+        mainLocation: dto.mainLocation,
+        subLocation: dto.subLocation,
+      });
+      saved = await this.locationRepository.save(location);
+    }
+
+    // Emisja eventu do logu audytowego
     this.eventEmitter.emit(
       'location.updated',
       new LocationUpdatedEvent(
-        savedLocation.id,
+        saved.id,
         changedById,
         LocationChange.CreatedLocation,
         {},
-        { mainLocation, subLocation },
+        { mainLocation: dto.mainLocation, subLocation: dto.subLocation },
       ),
     );
 
-    return savedLocation;
+    return saved;
   }
 
   async findAll(dto: FindAllLocationDto): Promise<Location[]> {

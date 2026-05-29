@@ -21,16 +21,47 @@ export class DataSourceService {
   ) {}
 
   async create(
-    dto: CreateDataSourceDto,
+    dto: CreateDataSourceDto & { id?: number }, // Rozszerzamy typ o opcjonalne id z backupu
     changedById: number | null,
   ): Promise<DataSource> {
+    // 1. Ręcznie serializujemy obiekt do stringa JSON (to naprawia błąd TypeScript)
     const connectionInfoString = JSON.stringify(dto.connectionInfo);
-    const dataSource = this.dataSourceRepository.create({
-      protocol: dto.protocol,
-      connectionInfo: connectionInfoString,
-    });
-    const saved = await this.dataSourceRepository.save(dataSource);
 
+    let saved: DataSource;
+
+    // 2. Jeśli przekazano id (np. podczas przywracania backupu), musimy użyć IDENTITY_INSERT
+    if (dto.id !== undefined) {
+      saved = await this.dataSourceRepository.manager.transaction(
+        async (tm) => {
+          const metadata = tm.getRepository(DataSource).metadata;
+          const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+
+          // Włączamy wymuszenie własnego ID w MS SQL
+          await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
+
+          const dataSource = tm.create(DataSource, {
+            id: dto.id,
+            protocol: dto.protocol,
+            connectionInfo: connectionInfoString, // Przekazujemy string, nie obiekt!
+          });
+
+          const savedEntity = await tm.save(DataSource, dataSource);
+
+          // Wyłączamy wymuszenie
+          await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+          return savedEntity;
+        },
+      );
+    } else {
+      // 3. Standardowa ścieżka (gdy ID generuje się automatycznie w bazie)
+      const dataSource = this.dataSourceRepository.create({
+        protocol: dto.protocol,
+        connectionInfo: connectionInfoString, // Przekazujemy string, nie obiekt!
+      });
+      saved = await this.dataSourceRepository.save(dataSource);
+    }
+
+    // 4. Emitujemy zdarzenie do historii zmian
     this.eventEmitter.emit(
       'data-source.updated',
       new DataSourceUpdatedEvent(
@@ -41,6 +72,7 @@ export class DataSourceService {
         { protocol: dto.protocol, connectionInfo: dto.connectionInfo },
       ),
     );
+
     return saved;
   }
 

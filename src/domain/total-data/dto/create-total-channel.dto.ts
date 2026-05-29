@@ -1,6 +1,14 @@
-import { IsInt, IsNotEmpty, IsObject } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsObject, IsOptional } from 'class-validator';
 
 export class CreateTotalChannelDto {
+  @ApiPropertyOptional({
+    description: 'Opcjonalne ID kanału danych sumarycznych.',
+  })
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
   @IsInt()
   @IsNotEmpty()
   meterId!: number;

@@ -1,11 +1,11 @@
 import {
   Injectable,
-  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+// scryptSync, randomBytes oraz timingSafeEqual są już tutaj importowane z 'crypto'
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from './entities/user.entity';
@@ -13,6 +13,7 @@ import { UserRole } from '../../core/enums/user-role.enum';
 import { UserUpdatedEvent } from './events/user-updated.event';
 import { UserChange } from '../../core/enums/user-change.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -43,48 +44,69 @@ export class UserService {
   }
 
   async create(
-    email: string,
-    passwordPlain: string,
-    firstName: string,
-    lastName: string,
-    role: UserRole,
-    creatorId: number | null,
+    dto: CreateUserDto & { id?: number },
+    changedById: number | null,
   ): Promise<User> {
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new ConflictException(
-        `Użytkownik o adresie email ${email} już istnieje.`,
+    let saved: User;
+
+    // POPRAWKA: Generujemy sól i haszujemy hasło za pomocą 'crypto' (identycznie jak w changePassword)
+    const salt = randomBytes(16).toString('hex');
+    const derivedKey = scryptSync(dto.password, salt, 64);
+    const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
+
+    if (dto.id !== undefined) {
+      // Ścieżka przywracania z modułu backupu dla MS SQL Server
+      saved = await this.userRepository.manager.transaction(
+        async (tm): Promise<User> => {
+          const metadata = tm.getRepository(User).metadata;
+          const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+
+          await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
+
+          const user = tm.create(User, {
+            id: dto.id,
+            email: dto.email,
+            passwordHash: hashedPassword,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            role: dto.role,
+          });
+
+          const savedEntity = await tm.save(User, user);
+          await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+          return savedEntity;
+        },
       );
+    } else {
+      // Standardowa ścieżka aplikacji
+      const user = this.userRepository.create({
+        email: dto.email,
+        passwordHash: hashedPassword,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: dto.role,
+      });
+      saved = await this.userRepository.save(user);
     }
 
-    const salt = randomBytes(16).toString('hex');
-    const derivedKey = scryptSync(passwordPlain, salt, 64);
-    const passwordHash = `${salt}:${derivedKey.toString('hex')}`;
-
-    const user = this.userRepository.create({
-      email,
-      passwordHash,
-      firstName,
-      lastName,
-      role,
-    });
-
-    const savedUser = await this.userRepository.save(user);
-
+    // Emisja eventu do logu audytowego
     this.eventEmitter.emit(
       'user.updated',
       new UserUpdatedEvent(
-        savedUser.id,
-        creatorId,
+        saved.id,
+        changedById,
         UserChange.CreatedUser,
         {},
-        { email, firstName, lastName, role },
+        {
+          email: dto.email,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: dto.role,
+        },
       ),
     );
 
-    return savedUser;
+    return saved;
   }
 
   async findById(id: number): Promise<User> {

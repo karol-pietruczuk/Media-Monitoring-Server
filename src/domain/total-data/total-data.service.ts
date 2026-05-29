@@ -18,24 +18,54 @@ export class TotalDataService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Tworzy kanał danych całkowitych.
+   * Wspiera opcjonalne przekazywanie "id" (np. z modułu backupu) za pomocą IDENTITY_INSERT w MS SQL.
+   */
   async createChannel(
-    dto: CreateTotalChannelDto,
+    dto: CreateTotalChannelDto & { id?: number }, // Rozszerzamy typ o opcjonalne id z backupu
     changedById: number | null,
   ): Promise<TotalDataChannel> {
     const mappingInfoString = JSON.stringify(dto.dataMappingInfo);
+    let saved: TotalDataChannel;
 
-    const channel = this.channelRepository.create({
-      meter: { id: dto.meterId } as Meter,
-      dataSource: { id: dto.dataSourceId } as DataSource,
-      dataMappingInfo: mappingInfoString,
-    });
+    // Jeżeli przekazano id, musimy otworzyć transakcję i włączyć IDENTITY_INSERT
+    if (dto.id !== undefined) {
+      await this.channelRepository.manager.transaction(async (tm) => {
+        const metadata = tm.getRepository(TotalDataChannel).metadata;
+        const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
 
-    const saved = await this.channelRepository.save(channel);
+        // Włączamy wymuszenie własnego ID w bazie MS SQL
+        await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
 
+        const channel = tm.create(TotalDataChannel, {
+          id: dto.id, // Przekazujemy podane ID
+          meter: { id: dto.meterId } as Meter,
+          dataSource: { id: dto.dataSourceId } as DataSource,
+          dataMappingInfo: mappingInfoString,
+        });
+
+        saved = await tm.save(TotalDataChannel, channel);
+
+        // Wyłączamy wymuszenie
+        await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+      });
+    } else {
+      // Standardowa ścieżka bez podanego ID - baza sama inkrementuje klucz
+      const channel = this.channelRepository.create({
+        meter: { id: dto.meterId } as Meter,
+        dataSource: { id: dto.dataSourceId } as DataSource,
+        dataMappingInfo: mappingInfoString,
+      });
+
+      saved = await this.channelRepository.save(channel);
+    }
+
+    // POZA TRANSAKCJĄ (Po COMMIT): Bezpiecznie emitujemy event dla historii zmian
     this.eventEmitter.emit(
       'total-channel.updated',
       new TotalChannelUpdatedEvent(
-        saved.id,
+        saved!.id,
         changedById,
         TotalDataChannelChange.CreatedTotalDataChannel,
         {},
@@ -46,7 +76,7 @@ export class TotalDataService {
       ),
     );
 
-    return saved;
+    return saved!;
   }
 
   async findChannelById(id: number): Promise<TotalDataChannel> {

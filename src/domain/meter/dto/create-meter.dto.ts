@@ -1,7 +1,20 @@
-import { IsEnum, IsInt, IsNotEmpty, IsString, Length } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { Unit } from '../../../core/enums/unit.enum';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateMeterDto {
+  @ApiPropertyOptional({ description: 'Opcjonalne ID licznika.' })
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
   @IsString()
   @IsNotEmpty()
   @Length(2, 50)

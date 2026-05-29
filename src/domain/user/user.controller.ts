@@ -57,13 +57,20 @@ export class UserController {
     @Body() dto: CreateUserDto,
     @Req() req: Request & { user: AuthenticatedUser },
   ): Promise<UserResponseDto> {
+    // PRZEDTEM:
+    // return this.userService.create(
+    //   dto.email,
+    //   dto.password,
+    //   dto.firstName,
+    //   dto.lastName,
+    //   dto.role,
+    //   req.user?.id ?? null,
+    // );
+
+    // POTEM (Zgodnie z architekturą obsługującą backup i logi historyczne):
     return this.userService.create(
-      dto.email,
-      dto.password,
-      dto.firstName,
-      dto.lastName,
-      dto.role,
-      req.user?.id ?? null,
+      dto, // Pierwszy argument: całe DTO (email, password, firstName, lastName, role)
+      req.user?.id ?? null, // Drugi argument: ID administratora tworzącego konto
     );
   }
 

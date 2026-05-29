@@ -23,6 +23,6 @@ import { PulseDataHistoryListener } from './listeners/pulse-data-history.listene
   ],
   controllers: [PulseDataController],
   providers: [PulseDataService, PulseDataHistoryListener],
-  exports: [TypeOrmModule, PulseDataService], // Eksportujemy serwis, aby moduł Meter mógł wstrzykiwać operacje kalkulacji
+  exports: [TypeOrmModule, PulseDataService], // Eksportujemy serwis, aby inne moduły (np. Meter, Backup) miały do niego pełen dostęp
 })
 export class PulseDataModule {}

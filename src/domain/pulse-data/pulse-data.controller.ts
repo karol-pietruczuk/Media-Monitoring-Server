@@ -22,6 +22,8 @@ import {
 import { PulseDataService } from './pulse-data.service';
 import { CreatePulseChannelDto } from './dto/create-pulse-channel.dto';
 import { UpdatePulseChannelDto } from './dto/update-pulse-channel.dto';
+import { CreateMultiplierDto } from './dto/create-pulse-multiplier.dto';
+import { UpdateMultiplierDto } from './dto/update-pulse-multiplier.dto';
 import { JwtAuthGuard } from '../../features/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../features/auth/guards/roles.guard';
 import { Roles } from '../../features/auth/decorators/roles.decorator';
@@ -30,12 +32,16 @@ import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
 import { PulseChannelResponseDto } from './dto/pulse-channel-response.dto';
 import { PulseChannelMessageResponseDto } from './dto/pulse-channel-message-response.dto';
 
-@ApiTags('Pulse Data Channels')
+@ApiTags('Pulse Data')
 @ApiBearerAuth()
 @Controller('pulse-data')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PulseDataController {
   constructor(private readonly pulseDataService: PulseDataService) {}
+
+  // =========================================================================
+  // ENDPOINTY DLA KANAŁÓW IMPULSOWYCH
+  // =========================================================================
 
   @Post('channels')
   @Roles(UserRole.Operator, UserRole.Admin)
@@ -127,6 +133,67 @@ export class PulseDataController {
     return {
       message:
         'Kanał impulsowy został pomyślnie usunięty, a operacja została zarejestrowana w logu audytowym.',
+    };
+  }
+
+  // =========================================================================
+  // ENDPOINTY DLA MNOŻNIKÓW IMPULSÓW (PULSE DATA MULTIPLIER)
+  // =========================================================================
+
+  @Post('multipliers')
+  @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Utworzenie nowego mnożnika impulsów [OPERATOR, ADMIN]',
+  })
+  @ApiCreatedResponse({
+    description: 'Mnożnik impulsów został pomyślnie dodany do licznika.',
+  })
+  async createMultiplier(
+    @Body() dto: CreateMultiplierDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ) {
+    return this.pulseDataService.createMultiplier(dto, req.user.id);
+  }
+
+  @Get('multipliers')
+  @ApiOperation({ summary: 'Pobranie wszystkich zarejestrowanych mnożników' })
+  async findAllMultipliers() {
+    return this.pulseDataService.findAllMultipliers();
+  }
+
+  @Get('multipliers/:id')
+  @ApiOperation({ summary: 'Pobranie szczegółów mnożnika po ID' })
+  @ApiParam({ name: 'id', description: 'Identyfikator mnożnika', example: 1 })
+  async findMultiplier(@Param('id', ParseIntPipe) id: number) {
+    return this.pulseDataService.findMultiplierById(id);
+  }
+
+  @Patch('multipliers/:id')
+  @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Aktualizacja parametrów mnożnika impulsów [OPERATOR, ADMIN]',
+  })
+  @ApiParam({ name: 'id', description: 'Identyfikator mnożnika', example: 1 })
+  async updateMultiplier(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMultiplierDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ) {
+    return this.pulseDataService.updateMultiplier(id, dto, req.user.id);
+  }
+
+  @Delete('multipliers/:id')
+  @Roles(UserRole.Admin)
+  @ApiOperation({ summary: 'Usunięcie mnożnika impulsów [ADMIN]' })
+  @ApiParam({ name: 'id', description: 'Identyfikator mnożnika', example: 1 })
+  async removeMultiplier(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ) {
+    await this.pulseDataService.removeMultiplier(id, req.user.id);
+    return {
+      message:
+        'Mnożnik impulsów został pomyślnie usunięty, a operacja została odnotowana w logu audytowym.',
     };
   }
 }

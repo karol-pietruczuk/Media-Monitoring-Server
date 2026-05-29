@@ -2,51 +2,112 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+
 import { PulseDataChannel } from './entities/pulse-data-channel.entity';
+import { PulseDataMultiplier } from './entities/pulse-data-multiplier.entity';
+
 import { CreatePulseChannelDto } from './dto/create-pulse-channel.dto';
 import { UpdatePulseChannelDto } from './dto/update-pulse-channel.dto';
+import { CreateMultiplierDto } from './dto/create-pulse-multiplier.dto';
+import { UpdateMultiplierDto } from './dto/update-pulse-multiplier.dto';
+
 import { PulseChannelUpdatedEvent } from './events/pulse-channel-updated.event';
+// Załóżmy analogiczną nazwę dla eventu mnożnika, dostosuj jeśli Twoja klasa nazywa się inaczej:
+import { PulseMultiplierUpdatedEvent } from './events/pulse-multiplier-updated.event';
+
 import { Meter } from '../meter/entities/meter.entity';
 import { DataSource } from '../data-source/entities/data-source.entity';
+
 import { PulseDataChannelChange } from '../../core/enums/pulse-data-channel-change.enum';
+// Załóżmy analogiczny enum, dostosuj nazwę jeśli jest inna:
+import { PulseDataMultiplierChange } from '../../core/enums/pulse-data-multiplier-change.enum';
 
 @Injectable()
 export class PulseDataService {
   constructor(
     @InjectRepository(PulseDataChannel)
     private readonly channelRepository: Repository<PulseDataChannel>,
+    @InjectRepository(PulseDataMultiplier)
+    private readonly multiplierRepository: Repository<PulseDataMultiplier>,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  // =========================================================================
+  // LOGIKA DLA KANAŁÓW IMPULSOWYCH (PULSE DATA CHANNEL)
+  // =========================================================================
+
   async createChannel(
-    dto: CreatePulseChannelDto,
+    dto: CreatePulseChannelDto & { id?: number },
     changedById: number | null,
   ): Promise<PulseDataChannel> {
     const mappingInfoString = JSON.stringify(dto.dataMappingInfo);
 
-    const channel = this.channelRepository.create({
-      meter: { id: dto.meterId } as Meter,
-      dataSource: { id: dto.dataSourceId } as DataSource,
-      dataMappingInfo: mappingInfoString,
-    });
+    if (dto.id !== undefined) {
+      // Zapis z jawnym ID (np. z modułu backupu)
+      const savedChannel = await this.channelRepository.manager.transaction(
+        async (tm): Promise<PulseDataChannel> => {
+          const metadata = tm.getRepository(PulseDataChannel).metadata;
+          const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
 
-    const saved = await this.channelRepository.save(channel);
+          await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
 
-    this.eventEmitter.emit(
-      'pulse-channel.updated',
-      new PulseChannelUpdatedEvent(
-        saved.id,
-        changedById,
-        PulseDataChannelChange.CreatedPulseDataChannel,
-        {},
-        {
-          dataSourceId: dto.dataSourceId,
-          dataMappingInfo: dto.dataMappingInfo,
+          const channel = tm.create(PulseDataChannel, {
+            id: dto.id,
+            meter: { id: dto.meterId } as Meter,
+            dataSource: { id: dto.dataSourceId } as DataSource,
+            dataMappingInfo: mappingInfoString,
+          });
+
+          const savedEntity = await tm.save(PulseDataChannel, channel);
+
+          await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+
+          return savedEntity;
         },
-      ),
-    );
+      );
 
-    return saved;
+      // Emitujemy zdarzenie po pomyślnym zatwierdzeniu transakcji
+      this.eventEmitter.emit(
+        'pulse-channel.updated',
+        new PulseChannelUpdatedEvent(
+          savedChannel.id,
+          changedById,
+          PulseDataChannelChange.CreatedPulseDataChannel,
+          {},
+          {
+            dataSourceId: dto.dataSourceId,
+            dataMappingInfo: dto.dataMappingInfo,
+          },
+        ),
+      );
+
+      return savedChannel;
+    } else {
+      // Standardowa ścieżka zapisu (baza danych sama nadaje ID)
+      const channel = this.channelRepository.create({
+        meter: { id: dto.meterId } as Meter,
+        dataSource: { id: dto.dataSourceId } as DataSource,
+        dataMappingInfo: mappingInfoString,
+      });
+
+      const savedChannel = await this.channelRepository.save(channel);
+
+      this.eventEmitter.emit(
+        'pulse-channel.updated',
+        new PulseChannelUpdatedEvent(
+          savedChannel.id,
+          changedById,
+          PulseDataChannelChange.CreatedPulseDataChannel,
+          {},
+          {
+            dataSourceId: dto.dataSourceId,
+            dataMappingInfo: dto.dataMappingInfo,
+          },
+        ),
+      );
+
+      return savedChannel;
+    }
   }
 
   async findChannelById(id: number): Promise<PulseDataChannel> {
@@ -68,7 +129,6 @@ export class PulseDataService {
   ): Promise<PulseDataChannel> {
     const channel = await this.findChannelById(id);
 
-    // BEZPIECZNE AUDIO: Optional chaining zapobiega wywaleniu błędu aplikacji
     const oldValues = {
       dataSourceId: channel.dataSource?.id ?? null,
       dataMappingInfo: channel.dataMappingInfo
@@ -105,7 +165,6 @@ export class PulseDataService {
   async removeChannel(id: number, changedById: number): Promise<void> {
     const channel = await this.findChannelById(id);
 
-    // BEZPIECZNE AUDIO: Zabezpieczenie przed usunięciem kaskadowym/pustymi relacjami
     const oldValues = {
       meterId: channel.meter?.id ?? null,
       dataSourceId: channel.dataSource?.id ?? null,
@@ -122,6 +181,140 @@ export class PulseDataService {
         id,
         changedById,
         PulseDataChannelChange.DeletedPulseDataChannel,
+        oldValues,
+        {},
+      ),
+    );
+  }
+
+  // =========================================================================
+  // LOGIKA DLA MNOŻNIKÓW IMPULSÓW (PULSE DATA MULTIPLIER)
+  // =========================================================================
+
+  async createMultiplier(
+    dto: CreateMultiplierDto,
+    changedById: number | null,
+  ): Promise<PulseDataMultiplier> {
+    let saved: PulseDataMultiplier;
+
+    if (dto.id !== undefined) {
+      await this.multiplierRepository.manager.transaction(async (tm) => {
+        const metadata = tm.getRepository(PulseDataMultiplier).metadata;
+        const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+
+        await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
+
+        const multiplier = tm.create(PulseDataMultiplier, {
+          id: dto.id,
+          value: dto.value,
+          expirationDateFrom: new Date(dto.expirationDateFrom),
+          meter: { id: dto.meterId } as Meter,
+        });
+
+        saved = await tm.save(PulseDataMultiplier, multiplier);
+        await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+      });
+    } else {
+      const multiplier = this.multiplierRepository.create({
+        value: dto.value,
+        expirationDateFrom: new Date(dto.expirationDateFrom),
+        meter: { id: dto.meterId } as Meter,
+      });
+      saved = await this.multiplierRepository.save(multiplier);
+    }
+
+    this.eventEmitter.emit(
+      'pulse-multiplier.updated',
+      new PulseMultiplierUpdatedEvent(
+        saved!.id,
+        changedById,
+        PulseDataMultiplierChange.CreatedPulseDataMultiplier,
+        {},
+        {
+          value: dto.value,
+          expirationDateFrom: dto.expirationDateFrom,
+          meterId: dto.meterId,
+        },
+      ),
+    );
+
+    return saved!;
+  }
+
+  async findAllMultipliers(): Promise<PulseDataMultiplier[]> {
+    return this.multiplierRepository.find({
+      relations: ['meter'],
+    });
+  }
+
+  async findMultiplierById(id: number): Promise<PulseDataMultiplier> {
+    const multiplier = await this.multiplierRepository.findOne({
+      where: { id },
+      relations: ['meter'],
+    });
+
+    if (!multiplier) {
+      throw new NotFoundException(`Mnożnik impulsów o ID ${id} nie istnieje.`);
+    }
+    return multiplier;
+  }
+
+  async updateMultiplier(
+    id: number,
+    dto: UpdateMultiplierDto,
+    changedById: number,
+  ): Promise<PulseDataMultiplier> {
+    const multiplier = await this.findMultiplierById(id);
+
+    const oldValues = {
+      value: multiplier.value,
+      expirationDateFrom: multiplier.expirationDateFrom.toISOString(),
+    };
+
+    if (dto.value !== undefined) {
+      multiplier.value = dto.value;
+    }
+    if (dto.expirationDateFrom !== undefined) {
+      multiplier.expirationDateFrom = new Date(dto.expirationDateFrom);
+    }
+
+    const updated = await this.multiplierRepository.save(multiplier);
+
+    this.eventEmitter.emit(
+      'pulse-multiplier.updated',
+      new PulseMultiplierUpdatedEvent(
+        id,
+        changedById,
+        PulseDataMultiplierChange.UpdatedPulseDataMultiplier,
+        oldValues,
+        {
+          value: dto.value ?? oldValues.value,
+          expirationDateFrom:
+            dto.expirationDateFrom ?? oldValues.expirationDateFrom,
+        },
+      ),
+    );
+
+    return updated;
+  }
+
+  async removeMultiplier(id: number, changedById: number): Promise<void> {
+    const multiplier = await this.findMultiplierById(id);
+
+    const oldValues = {
+      value: multiplier.value,
+      expirationDateFrom: multiplier.expirationDateFrom.toISOString(),
+      meterId: multiplier.meter?.id ?? null,
+    };
+
+    await this.multiplierRepository.remove(multiplier);
+
+    this.eventEmitter.emit(
+      'pulse-multiplier.updated',
+      new PulseMultiplierUpdatedEvent(
+        id,
+        changedById,
+        PulseDataMultiplierChange.DeletedPulseDataMultiplier,
         oldValues,
         {},
       ),

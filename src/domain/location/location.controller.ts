@@ -46,15 +46,26 @@ export class LocationController {
     description: 'Lokalizacja została pomyślnie zarejestrowana.',
     type: LocationResponseDto,
   })
+  @Post()
+  @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({ summary: 'Utworzenie nowej lokalizacji [OPERATOR, ADMIN]' })
+  @ApiCreatedResponse({
+    description: 'Lokalizacja została pomyślnie zarejestrowana.',
+    type: LocationResponseDto,
+  })
   async create(
     @Body() dto: CreateLocationDto,
     @Req() req: Request & { user: AuthenticatedUser },
   ): Promise<LocationResponseDto> {
+    // PRZEDTEM:
+    // const rawLocation = await this.locationService.create(dto.mainLocation, dto.subLocation, req.user.id);
+
+    // POTEM (Zgodnie z nowym wzorcem dla modułów z obsługą backupu i logów):
     const rawLocation = await this.locationService.create(
-      dto.mainLocation,
-      dto.subLocation,
-      req.user.id,
+      dto, // Pierwszy argument: całe DTO zawierające mainLocation i subLocation
+      req.user.id, // Drugi argument: ID zalogowanego operatora dla systemu historii zmian
     );
+
     return rawLocation as LocationResponseDto;
   }
 

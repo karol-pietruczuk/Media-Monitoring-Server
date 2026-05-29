@@ -42,11 +42,21 @@ export class MeterService {
   ): Promise<Meter> {
     let savedMeter: Meter;
 
-    // Otwieramy transakcję bazodanową
     await this.meterRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // 1. Tworzymy i zapisujemy podstawowy obiekt licznika
+        // Pobieramy metadane tabeli Meter, aby włączyć IDENTITY_INSERT w MS SQL
+        const metadata =
+          transactionalEntityManager.getRepository(Meter).metadata;
+        const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+
+        if (dto.id) {
+          await transactionalEntityManager.query(
+            `SET IDENTITY_INSERT ${tableName} ON`,
+          );
+        }
+
         const meter = transactionalEntityManager.create(Meter, {
+          id: dto.id, // Przekazujemy opcjonalne ID
           name: dto.name,
           symbol: dto.symbol,
           unit: dto.unit,
@@ -54,7 +64,13 @@ export class MeterService {
         });
         savedMeter = await transactionalEntityManager.save(Meter, meter);
 
-        // 2. Automatycznie inicjalizujemy licznik impulsów wartościami startowymi (0)
+        if (dto.id) {
+          await transactionalEntityManager.query(
+            `SET IDENTITY_INSERT ${tableName} OFF`,
+          );
+        }
+
+        // Automatyczna inicjalizacja reszty encji (bez zmian)
         const initialCalculated = transactionalEntityManager.create(
           PulseDataCalculated,
           {
@@ -69,7 +85,6 @@ export class MeterService {
           initialCalculated,
         );
 
-        // 3. Automatycznie tworzymy domyślny mnożnik licznika (wartość 1.0)
         const initialMultiplier = transactionalEntityManager.create(
           PulseDataMultiplier,
           {
@@ -85,7 +100,7 @@ export class MeterService {
       },
     );
 
-    // POZA TRANSAKCJĄ (Po udanym COMMIT): Emitujemy zdarzenie zapisu do historii
+    // Emisja eventu po udanym COMMIT (bezpieczeństwo przed logami-widmo)
     this.eventEmitter.emit(
       'meter.updated',
       new MeterUpdatedEvent(
@@ -242,18 +257,34 @@ export class MeterService {
     dto: CreateCalibrationDto,
     changedById: number | null,
   ): Promise<MeterCalibration> {
-    const calibration = this.calibrationRepository.create({
-      value: dto.value,
-      timestamp: new Date(dto.timestamp),
-      meter: { id: dto.meterId } as Meter,
-    });
+    let saved: MeterCalibration;
 
-    const saved = await this.calibrationRepository.save(calibration);
+    await this.calibrationRepository.manager.transaction(async (tm) => {
+      const metadata = tm.getRepository(MeterCalibration).metadata;
+      const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+
+      if (dto.id) {
+        await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
+      }
+
+      const calibration = tm.create(MeterCalibration, {
+        id: dto.id, // Przekazujemy opcjonalne ID
+        value: dto.value,
+        timestamp: new Date(dto.timestamp),
+        meter: { id: dto.meterId } as Meter,
+      });
+
+      saved = await tm.save(MeterCalibration, calibration);
+
+      if (dto.id) {
+        await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
+      }
+    });
 
     this.eventEmitter.emit(
       'meter-calibration.updated',
       new MeterCalibrationUpdatedEvent(
-        saved.id,
+        saved!.id,
         changedById,
         MeterCalibrationChange.CreatedMeterCalibration,
         {},
@@ -261,6 +292,6 @@ export class MeterService {
       ),
     );
 
-    return saved;
+    return saved!;
   }
 }
