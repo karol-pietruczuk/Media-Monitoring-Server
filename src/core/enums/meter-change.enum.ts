@@ -1,5 +1,5 @@
 export enum MeterChange {
-  CreatedMeter,
-  UpdatedMeter,
-  DeletedMeter,
+  CreatedMeter = 'CREATED_METER',
+  UpdatedMeter = 'UPDATED_METER',
+  DeletedMeter = 'DELETED_METER',
 }

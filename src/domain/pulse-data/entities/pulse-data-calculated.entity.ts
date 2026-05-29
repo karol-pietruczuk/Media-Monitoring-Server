@@ -33,7 +33,9 @@ export class PulseDataCalculated {
   })
   createdAt!: Date;
 
-  @OneToOne(() => Meter, (meter) => meter.pulseDataCalculated)
+  @OneToOne(() => Meter, (meter) => meter.pulseDataCalculated, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
   meter!: Meter;
 }

@@ -15,7 +15,11 @@ import { MeterUpdatedEvent } from './events/meter-updated.event';
 import { MeterCalibrationUpdatedEvent } from './events/meter-calibration-updated.event';
 import { MeterChange } from '../../core/enums/meter-change.enum';
 import { MeterCalibrationChange } from '../../core/enums/meter-calibration-change.enum';
-import { Location } from '../location/entities/location.entity'; // KLUCZOWY IMPORT TWOJEJ ENCJI ZAMIAST NATYWNEGO OBIEKTU WEB
+import { Location } from '../location/entities/location.entity';
+
+// === NOWE IMPORTY ENCJI POWIĄZANYCH ===
+import { PulseDataCalculated } from '../pulse-data/entities/pulse-data-calculated.entity';
+import { PulseDataMultiplier } from '../pulse-data/entities/pulse-data-multiplier.entity';
 
 @Injectable()
 export class MeterService {
@@ -27,36 +31,74 @@ export class MeterService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
+  /**
+   * Tworzy licznik oraz automatycznie inicjalizuje encje PulseDataCalculated i PulseDataMultiplier
+   */
   async create(
     dto: CreateMeterDto,
     changedById: number | null,
   ): Promise<Meter> {
-    const meter = this.meterRepository.create({
-      name: dto.name,
-      symbol: dto.symbol,
-      unit: dto.unit,
-      location: { id: dto.locationId } as Location, // Teraz asercja przejdzie bezbłędnie
-    });
-
-    const saved = await this.meterRepository.save(meter);
-
-    this.eventEmitter.emit(
-      'meter.updated',
-      new MeterUpdatedEvent(
-        saved.id,
-        changedById,
-        MeterChange.CreatedMeter,
-        {},
-        {
+    // Wykonujemy operację w transakcji, aby zagwarantować spójność (wszystko albo nic)
+    return await this.meterRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // 1. Tworzymy i zapisujemy bazową encję Meter
+        const meter = transactionalEntityManager.create(Meter, {
           name: dto.name,
           symbol: dto.symbol,
           unit: dto.unit,
-          locationId: dto.locationId,
-        },
-      ),
-    );
+          location: { id: dto.locationId } as Location,
+        });
+        const savedMeter = await transactionalEntityManager.save(Meter, meter);
 
-    return saved;
+        // 2. Automatycznie tworzymy encję PulseDataCalculated z wartościami początkowymi
+        const initialCalculated = transactionalEntityManager.create(
+          PulseDataCalculated,
+          {
+            pulsesAfterLastCalibration: 0,
+            actualValue: 0.0,
+            actualTimestamp: new Date(),
+            meter: savedMeter,
+          },
+        );
+        await transactionalEntityManager.save(
+          PulseDataCalculated,
+          initialCalculated,
+        );
+
+        // 3. Automatycznie tworzymy encję PulseDataMultiplier (domyślny mnożnik = 1.0)
+        const initialMultiplier = transactionalEntityManager.create(
+          PulseDataMultiplier,
+          {
+            value: 1.0,
+            expirationDateFrom: new Date(),
+            meter: savedMeter,
+          },
+        );
+        await transactionalEntityManager.save(
+          PulseDataMultiplier,
+          initialMultiplier,
+        );
+
+        // 4. Emitujemy zdarzenie utworzenia licznika
+        this.eventEmitter.emit(
+          'meter.updated',
+          new MeterUpdatedEvent(
+            savedMeter.id,
+            changedById,
+            MeterChange.CreatedMeter,
+            {},
+            {
+              name: dto.name,
+              symbol: dto.symbol,
+              unit: dto.unit,
+              locationId: dto.locationId,
+            },
+          ),
+        );
+
+        return savedMeter;
+      },
+    );
   }
 
   async findAll(): Promise<Meter[]> {
@@ -71,7 +113,6 @@ export class MeterService {
   }
 
   async findById(id: number): Promise<Meter> {
-    // Zapewniamy pełną konfigurację obiektu wyszukiwania pojedynczego rekordu
     const meter = await this.meterRepository.findOne({
       where: { id },
       relations: ['location', 'pulseDataChannel', 'totalDataChannel'],
@@ -122,6 +163,9 @@ export class MeterService {
     return updated;
   }
 
+  /**
+   * Usuwa licznik i automatycznie czyści powiązane encje kalkulacji/mnożników
+   */
   async remove(id: number, changedById: number): Promise<void> {
     const meter = await this.findById(id);
     const oldValues = {
@@ -131,9 +175,22 @@ export class MeterService {
     };
 
     try {
-      await this.meterRepository.remove(meter);
+      // Wykonujemy czyszczenie w transakcji
+      await this.meterRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          // 1. Ręcznie usuwamy encje zależne, by uniknąć błędów kluczy obcych (FK Constraint)
+          await transactionalEntityManager.delete(PulseDataCalculated, {
+            meterId: id,
+          });
+          await transactionalEntityManager.delete(PulseDataMultiplier, {
+            meter: { id },
+          });
+
+          // 2. Usuwamy właściwy licznik
+          await transactionalEntityManager.remove(Meter, meter);
+        },
+      );
     } catch (error: unknown) {
-      // Bezpieczne przechwycenie błędu naruszenia klucza obcego (FK Constraint)
       const sqlError = error as Error & { code?: string; number?: number };
       if (
         sqlError.code === 'EREQUEST' ||
@@ -141,7 +198,7 @@ export class MeterService {
         (error instanceof Error && error.message.includes('FOREIGN KEY'))
       ) {
         throw new ConflictException(
-          'Nie można usunąć licznika, ponieważ posiada on przypisane pomiary, kalibracje lub kanały danych.',
+          'Nie można usunąć licznika, ponieważ posiada on przypisane historyczne pomiary, kalibracje lub kanały danych.',
         );
       }
       throw error;
@@ -159,7 +216,6 @@ export class MeterService {
     );
   }
 
-  // --- LOGIKA KALIBRACJI LICZNIKA ---
   async addCalibration(
     dto: CreateCalibrationDto,
     changedById: number | null,

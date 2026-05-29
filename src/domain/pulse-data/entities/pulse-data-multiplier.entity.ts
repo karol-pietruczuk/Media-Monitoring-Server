@@ -36,7 +36,9 @@ export class PulseDataMultiplier {
   })
   createdAt!: Date;
 
-  @ManyToOne(() => Meter, (meter) => meter.pulseDataMultiplier)
+  @ManyToOne(() => Meter, (meter) => meter.pulseDataMultiplier, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn([{ name: 'meterId', referencedColumnName: 'id' }])
   meter!: Meter;
 
