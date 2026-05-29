@@ -1,3 +1,4 @@
+// File: meter/meter.service.ts
 import {
   ConflictException,
   Injectable,
@@ -17,7 +18,7 @@ import { MeterChange } from '../../core/enums/meter-change.enum';
 import { MeterCalibrationChange } from '../../core/enums/meter-calibration-change.enum';
 import { Location } from '../location/entities/location.entity';
 
-// === NOWE IMPORTY ENCJI POWIĄZANYCH ===
+// === IMPORTY POWIĄZANYCH ENCJI DANYCH IMPULSOWYCH ===
 import { PulseDataCalculated } from '../pulse-data/entities/pulse-data-calculated.entity';
 import { PulseDataMultiplier } from '../pulse-data/entities/pulse-data-multiplier.entity';
 
@@ -32,25 +33,28 @@ export class MeterService {
   ) {}
 
   /**
-   * Tworzy licznik oraz automatycznie inicjalizuje encje PulseDataCalculated i PulseDataMultiplier
+   * Tworzy nowy licznik oraz automatycznie inicjalizuje encje PulseDataCalculated i PulseDataMultiplier.
+   * Transakcja gwarantuje stabilność danych, a event historii wysyłany jest po COMMIT bazy.
    */
   async create(
     dto: CreateMeterDto,
     changedById: number | null,
   ): Promise<Meter> {
-    // Wykonujemy operację w transakcji, aby zagwarantować spójność (wszystko albo nic)
-    return await this.meterRepository.manager.transaction(
+    let savedMeter: Meter;
+
+    // Otwieramy transakcję bazodanową
+    await this.meterRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // 1. Tworzymy i zapisujemy bazową encję Meter
+        // 1. Tworzymy i zapisujemy podstawowy obiekt licznika
         const meter = transactionalEntityManager.create(Meter, {
           name: dto.name,
           symbol: dto.symbol,
           unit: dto.unit,
           location: { id: dto.locationId } as Location,
         });
-        const savedMeter = await transactionalEntityManager.save(Meter, meter);
+        savedMeter = await transactionalEntityManager.save(Meter, meter);
 
-        // 2. Automatycznie tworzymy encję PulseDataCalculated z wartościami początkowymi
+        // 2. Automatycznie inicjalizujemy licznik impulsów wartościami startowymi (0)
         const initialCalculated = transactionalEntityManager.create(
           PulseDataCalculated,
           {
@@ -65,7 +69,7 @@ export class MeterService {
           initialCalculated,
         );
 
-        // 3. Automatycznie tworzymy encję PulseDataMultiplier (domyślny mnożnik = 1.0)
+        // 3. Automatycznie tworzymy domyślny mnożnik licznika (wartość 1.0)
         const initialMultiplier = transactionalEntityManager.create(
           PulseDataMultiplier,
           {
@@ -78,29 +82,32 @@ export class MeterService {
           PulseDataMultiplier,
           initialMultiplier,
         );
-
-        // 4. Emitujemy zdarzenie utworzenia licznika
-        this.eventEmitter.emit(
-          'meter.updated',
-          new MeterUpdatedEvent(
-            savedMeter.id,
-            changedById,
-            MeterChange.CreatedMeter,
-            {},
-            {
-              name: dto.name,
-              symbol: dto.symbol,
-              unit: dto.unit,
-              locationId: dto.locationId,
-            },
-          ),
-        );
-
-        return savedMeter;
       },
     );
+
+    // POZA TRANSAKCJĄ (Po udanym COMMIT): Emitujemy zdarzenie zapisu do historii
+    this.eventEmitter.emit(
+      'meter.updated',
+      new MeterUpdatedEvent(
+        savedMeter!.id,
+        changedById,
+        MeterChange.CreatedMeter,
+        {},
+        {
+          name: dto.name,
+          symbol: dto.symbol,
+          unit: dto.unit,
+          locationId: dto.locationId,
+        },
+      ),
+    );
+
+    return savedMeter!;
   }
 
+  /**
+   * Pobiera listę wszystkich liczników wraz z powiązanymi strukturami danych
+   */
   async findAll(): Promise<Meter[]> {
     return this.meterRepository.find({
       relations: [
@@ -112,6 +119,9 @@ export class MeterService {
     });
   }
 
+  /**
+   * Pobiera szczegółowe dane pojedynczego licznika na podstawie ID
+   */
   async findById(id: number): Promise<Meter> {
     const meter = await this.meterRepository.findOne({
       where: { id },
@@ -123,6 +133,9 @@ export class MeterService {
     return meter;
   }
 
+  /**
+   * Aktualizuje konfigurację strukturalną wybranego licznika
+   */
   async update(
     id: number,
     dto: UpdateMeterDto,
@@ -144,6 +157,7 @@ export class MeterService {
 
     const updated = await this.meterRepository.save(meter);
 
+    // Emisja eventu po udanym zapisie pojedynczego obiektu
     this.eventEmitter.emit(
       'meter.updated',
       new MeterUpdatedEvent(
@@ -164,7 +178,8 @@ export class MeterService {
   }
 
   /**
-   * Usuwa licznik i automatycznie czyści powiązane encje kalkulacji/mnożników
+   * Trwale usuwa licznik, czyszcząc automatycznie powiązane tabele przeliczeń w transakcji.
+   * Chroni integralność bazy w przypadku istnienia historycznych serii pomiarowych.
    */
   async remove(id: number, changedById: number): Promise<void> {
     const meter = await this.findById(id);
@@ -175,22 +190,25 @@ export class MeterService {
     };
 
     try {
-      // Wykonujemy czyszczenie w transakcji
+      // Wykonujemy kaskadowe czyszczenie struktur wyliczeniowych w transakcji
       await this.meterRepository.manager.transaction(
         async (transactionalEntityManager) => {
-          // 1. Ręcznie usuwamy encje zależne, by uniknąć błędów kluczy obcych (FK Constraint)
+          // 1. Usuwamy rekordy z pulseDataCalculated przypisane do tego licznika
           await transactionalEntityManager.delete(PulseDataCalculated, {
             meterId: id,
           });
+
+          // 2. Usuwamy rekordy z pulseDataMultiplier przypisane do tego licznika
           await transactionalEntityManager.delete(PulseDataMultiplier, {
             meter: { id },
           });
 
-          // 2. Usuwamy właściwy licznik
+          // 3. Usuwamy właściwy licznik
           await transactionalEntityManager.remove(Meter, meter);
         },
       );
     } catch (error: unknown) {
+      // Bezpieczne przechwycenie błędu naruszenia klucza obcego w bazie MS SQL (np. istniejące pomiary)
       const sqlError = error as Error & { code?: string; number?: number };
       if (
         sqlError.code === 'EREQUEST' ||
@@ -204,6 +222,7 @@ export class MeterService {
       throw error;
     }
 
+    // POZA TRANSAKCJĄ: Jeśli transakcja zakończyła się sukcesem, bezpiecznie logujemy zdarzenie usunięcia
     this.eventEmitter.emit(
       'meter.updated',
       new MeterUpdatedEvent(
@@ -216,6 +235,9 @@ export class MeterService {
     );
   }
 
+  /**
+   * Logika dodawania nowego punktu kalibracyjnego / odczytu kontrolnego
+   */
   async addCalibration(
     dto: CreateCalibrationDto,
     changedById: number | null,
