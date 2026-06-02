@@ -38,6 +38,12 @@ export class Meter {
   })
   unit!: Unit;
 
+  @Column('bit', { name: 'activeTotalData', default: true })
+  activeTotalData!: boolean;
+
+  @Column('bit', { name: 'activePulseData', default: true })
+  activePulseData!: boolean;
+
   @Column('datetime2', {
     name: 'createdAt',
     default: () => 'getdate()',

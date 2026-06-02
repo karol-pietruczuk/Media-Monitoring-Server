@@ -294,4 +294,60 @@ export class MeterService {
 
     return saved!;
   }
+
+  // Metoda do dodania wewnątrz klasy MeterService
+  async toggleTotalData(
+    id: number,
+    isActive: boolean,
+    changedById: number,
+  ): Promise<Meter> {
+    const meter = await this.findById(id);
+    if (meter.activeTotalData === isActive) return meter;
+
+    const oldValues = { activeTotalData: meter.activeTotalData };
+    meter.activeTotalData = isActive;
+
+    const updated = await this.meterRepository.save(meter);
+
+    this.eventEmitter.emit(
+      'meter.updated',
+      new MeterUpdatedEvent(
+        id,
+        changedById,
+        MeterChange.UpdatedMeter,
+        oldValues,
+        { activeTotalData: isActive },
+      ),
+    );
+
+    return updated;
+  }
+
+  // Metoda do dodania wewnątrz klasy MeterService
+  async togglePulseData(
+    id: number,
+    isActive: boolean,
+    changedById: number,
+  ): Promise<Meter> {
+    const meter = await this.findById(id);
+    if (meter.activePulseData === isActive) return meter;
+
+    const oldValues = { activePulseData: meter.activePulseData };
+    meter.activePulseData = isActive;
+
+    const updated = await this.meterRepository.save(meter);
+
+    this.eventEmitter.emit(
+      'meter.updated',
+      new MeterUpdatedEvent(
+        id,
+        changedById,
+        MeterChange.UpdatedMeter,
+        oldValues,
+        { activePulseData: isActive },
+      ),
+    );
+
+    return updated;
+  }
 }

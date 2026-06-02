@@ -31,6 +31,7 @@ import { AuthenticatedUser } from '../../core/types/authenticated-user.type';
 import { MeterResponseDto } from './dto/meter-response.dto';
 import { MeterMessageResponseDto } from './dto/meter-message-response.dto';
 import { CalibrationResponseDto } from './dto/meter-calibration-response.dto';
+import { UpdateMeterStatusDto } from './dto/update-meter-status.dto';
 
 @ApiTags('Meters')
 @ApiBearerAuth()
@@ -149,5 +150,45 @@ export class MeterController {
       req.user.id,
     );
     return rawCalibration as CalibrationResponseDto;
+  }
+
+  @Patch(':id/status/total-data')
+  @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Włącz/Wyłącz pobieranie danych TotalData dla licznika',
+  })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiOkResponse({ type: MeterResponseDto })
+  async toggleTotalData(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMeterStatusDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<MeterResponseDto> {
+    const rawMeter = await this.meterService.toggleTotalData(
+      id,
+      dto.isActive,
+      req.user.id,
+    );
+    return rawMeter as MeterResponseDto;
+  }
+
+  @Patch(':id/status/pulse-data')
+  @Roles(UserRole.Operator, UserRole.Admin)
+  @ApiOperation({
+    summary: 'Włącz/Wyłącz pobieranie danych PulseData dla licznika',
+  })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiOkResponse({ type: MeterResponseDto })
+  async togglePulseData(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMeterStatusDto,
+    @Req() req: Request & { user: AuthenticatedUser },
+  ): Promise<MeterResponseDto> {
+    const rawMeter = await this.meterService.togglePulseData(
+      id,
+      dto.isActive,
+      req.user.id,
+    );
+    return rawMeter as MeterResponseDto;
   }
 }
