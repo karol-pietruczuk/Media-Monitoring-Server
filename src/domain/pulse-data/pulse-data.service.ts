@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common'; // <-- Dodano ConflictException
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm'; // <-- Dodano IsNull
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { PulseDataChannel } from './entities/pulse-data-channel.entity';
@@ -187,41 +191,62 @@ export class PulseDataService {
     );
   }
 
-  // =========================================================================
-  // LOGIKA DLA MNOŻNIKÓW IMPULSÓW (PULSE DATA MULTIPLIER)
-  // =========================================================================
-
   async createMultiplier(
     dto: CreateMultiplierDto,
     changedById: number | null,
   ): Promise<PulseDataMultiplier> {
     let saved: PulseDataMultiplier;
+    const newFromDate = new Date(dto.expirationDateFrom);
 
-    if (dto.id !== undefined) {
-      await this.multiplierRepository.manager.transaction(async (tm) => {
+    await this.multiplierRepository.manager.transaction(async (tm) => {
+      // 1. Sprawdzamy czy istnieje otwarty (aktualny) mnożnik dla tego licznika za pomocą IsNull()
+      const activeMultiplier = await tm.findOne(PulseDataMultiplier, {
+        where: {
+          meter: { id: dto.meterId },
+          expirationDateUntil: IsNull(), // <-- Bezpieczne i bez "as any"
+        },
+      });
+
+      if (activeMultiplier) {
+        // Jeśli nowa data "od" jest starsza lub równa dacie "od" obecnego mnożnika -> BŁĄD
+        if (
+          newFromDate.getTime() <= activeMultiplier.expirationDateFrom.getTime()
+        ) {
+          throw new ConflictException(
+            `Nakładające się daty. Nowy mnożnik musi obowiązywać od daty późniejszej niż ${activeMultiplier.expirationDateFrom.toISOString()}`,
+          );
+        }
+
+        // Automatyczne "zamknięcie" poprzedniego okresu
+        activeMultiplier.expirationDateUntil = newFromDate;
+        await tm.save(PulseDataMultiplier, activeMultiplier);
+      }
+
+      // 2. Obsługa manualnego wprowadzania z ID (dla modułu backupu)
+      if (dto.id !== undefined) {
         const metadata = tm.getRepository(PulseDataMultiplier).metadata;
         const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
-
         await tm.query(`SET IDENTITY_INSERT ${tableName} ON`);
 
         const multiplier = tm.create(PulseDataMultiplier, {
           id: dto.id,
           value: dto.value,
-          expirationDateFrom: new Date(dto.expirationDateFrom),
+          expirationDateFrom: newFromDate,
           meter: { id: dto.meterId } as Meter,
         });
 
         saved = await tm.save(PulseDataMultiplier, multiplier);
         await tm.query(`SET IDENTITY_INSERT ${tableName} OFF`);
-      });
-    } else {
-      const multiplier = this.multiplierRepository.create({
-        value: dto.value,
-        expirationDateFrom: new Date(dto.expirationDateFrom),
-        meter: { id: dto.meterId } as Meter,
-      });
-      saved = await this.multiplierRepository.save(multiplier);
-    }
+      } else {
+        // 3. Standardowe tworzenie mnożnika
+        const multiplier = tm.create(PulseDataMultiplier, {
+          value: dto.value,
+          expirationDateFrom: newFromDate,
+          meter: { id: dto.meterId } as Meter,
+        });
+        saved = await tm.save(PulseDataMultiplier, multiplier);
+      }
+    });
 
     this.eventEmitter.emit(
       'pulse-multiplier.updated',
