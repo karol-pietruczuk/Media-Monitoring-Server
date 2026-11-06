@@ -44,33 +44,44 @@ export class MeterService {
 
     await this.meterRepository.manager.transaction(
       async (transactionalEntityManager) => {
-        // Pobieramy metadane tabeli Meter, aby włączyć IDENTITY_INSERT w MS SQL
-        const metadata =
-          transactionalEntityManager.getRepository(Meter).metadata;
-        const tableName = `"${metadata.schema || 'dbo'}"."${metadata.tableName}"`;
+        let meterId = dto.id;
 
-        if (dto.id) {
-          await transactionalEntityManager.query(
-            `SET IDENTITY_INSERT ${tableName} ON`,
+        // 1. Logika generowania lub walidacji ID
+        if (!meterId) {
+          // Jawne określenie typu zwracanego przez getRawOne
+          const maxResult = await transactionalEntityManager
+            .getRepository(Meter)
+            .createQueryBuilder('meter')
+            .select('MAX(meter.id)', 'max')
+            .getRawOne<{ max: number | null }>();
+
+          meterId = (maxResult?.max || 0) + 1;
+        } else {
+          // Jeśli użytkownik poda własne ID, sprawdzamy czy już taki rekord istnieje
+          const existingMeter = await transactionalEntityManager.findOne(
+            Meter,
+            {
+              where: { id: meterId },
+            },
           );
+
+          if (existingMeter) {
+            throw new ConflictException(`Meter o ID ${meterId} już istnieje.`);
+          }
         }
 
+        // 2. Tworzenie encji z wyznaczonym ID (brak SET IDENTITY_INSERT)
         const meter = transactionalEntityManager.create(Meter, {
-          id: dto.id, // Przekazujemy opcjonalne ID
+          id: meterId,
           name: dto.name,
           symbol: dto.symbol,
           unit: dto.unit,
           location: { id: dto.locationId } as Location,
         });
+
         savedMeter = await transactionalEntityManager.save(Meter, meter);
 
-        if (dto.id) {
-          await transactionalEntityManager.query(
-            `SET IDENTITY_INSERT ${tableName} OFF`,
-          );
-        }
-
-        // Automatyczna inicjalizacja reszty encji (bez zmian)
+        // 3. Automatyczna inicjalizacja reszty encji (bez zmian)
         const initialCalculated = transactionalEntityManager.create(
           PulseDataCalculated,
           {
@@ -109,6 +120,7 @@ export class MeterService {
         MeterChange.CreatedMeter,
         {},
         {
+          id: savedMeter!.id, // Przekazujemy również ID w payloadzie eventu
           name: dto.name,
           symbol: dto.symbol,
           unit: dto.unit,

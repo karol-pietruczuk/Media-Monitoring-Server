@@ -12,7 +12,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class CreateMeterDto {
   @ApiPropertyOptional({ description: 'Opcjonalne ID licznika.' })
   @IsOptional()
-  @IsInt()
+  @IsInt({ message: 'ID musi być liczbą całkowitą' })
   id?: number;
 
   @IsString()
