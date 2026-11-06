@@ -104,6 +104,9 @@ export class DataSyncService {
             Array.from(totalMeterIds),
           );
 
+          const processedPulseKeys = new Set<string>();
+          //const processedTotalKeys = new Set<string>();
+
           // 4. Pobieranie danych ze sterownika
           for (const mapping of uniqueMappings.values()) {
             this.logger.log(
@@ -114,6 +117,7 @@ export class DataSyncService {
             // 5. Segregacja i FILTROWANIE DUPLIKATÓW
             for (const reading of readings) {
               const readingTime = new Date(reading.timestamp).getTime();
+              const uniqueKey = `${reading.meterId}_${readingTime}`;
 
               // Kanał impulsowy
               if (pulseMeterIds.has(reading.meterId)) {
@@ -121,7 +125,11 @@ export class DataSyncService {
                   latestPulseTimestamps.get(reading.meterId)?.getTime() || 0;
 
                 // Zapisujemy tylko wtedy, gdy odczyt z PLC jest NOWSZY niż to, co mamy w bazie
-                if (readingTime > latestDbTime) {
+                if (
+                  readingTime > latestDbTime &&
+                  !processedPulseKeys.has(uniqueKey)
+                ) {
+                  processedPulseKeys.add(uniqueKey);
                   rawEntitiesToInsertPulse.push({
                     meter: { id: reading.meterId } as Meter,
                     pulses: Math.round(reading.value),
