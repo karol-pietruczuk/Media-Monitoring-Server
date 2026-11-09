@@ -54,14 +54,36 @@ export class DataSyncService {
 
       for (const ds of activeDataSources) {
         try {
-          const pulseChannels = await this.pulseChannelRepository.find({
+          // Pobieranie kanałów impulsowych i całkowitych
+          const allPulseChannels = await this.pulseChannelRepository.find({
             where: { dataSource: { id: ds.id } },
             relations: ['meter'],
           });
-          const totalChannels = await this.totalChannelRepository.find({
+
+          const allTotalChannels = await this.totalChannelRepository.find({
             where: { dataSource: { id: ds.id } },
             relations: ['meter'],
           });
+
+          // Uwzględniamy wyłącznie liczniki z aktywnymi pomiarami impulsowymi
+          const pulseChannels = allPulseChannels.filter(
+            (ch) => ch.meter?.activePulseData === true,
+          );
+
+          // Uwzględniamy wyłącznie liczniki z aktywnymi pomiarami całkowitymi
+          const totalChannels = allTotalChannels.filter(
+            (ch) => ch.meter?.activeTotalData === true,
+          );
+
+          // Informacja diagnostyczna
+          this.logger.log(
+            `Źródło ID ${ds.id}: aktywne kanały impulsowe: ${pulseChannels.length}/${allPulseChannels.length}, aktywne kanały całkowite: ${totalChannels.length}/${allTotalChannels.length}`,
+          );
+
+          // Pomijamy źródło, jeśli nie ma aktywnych kanałów
+          if (pulseChannels.length === 0 && totalChannels.length === 0) {
+            continue;
+          }
 
           if (pulseChannels.length === 0 && totalChannels.length === 0) {
             continue;
@@ -72,13 +94,19 @@ export class DataSyncService {
           pulseChannels.forEach((ch) =>
             uniqueMappings.set(
               ch.dataMappingInfo,
-              JSON.parse(ch.dataMappingInfo) as IOpcUaBulkMapping,
+              this.parseJsonSafe<IOpcUaBulkMapping>(
+                ch.dataMappingInfo,
+                `PulseDataChannel ID ${ch.id}`,
+              ),
             ),
           );
           totalChannels.forEach((ch) =>
             uniqueMappings.set(
               ch.dataMappingInfo,
-              JSON.parse(ch.dataMappingInfo) as IOpcUaBulkMapping,
+              this.parseJsonSafe<IOpcUaBulkMapping>(
+                ch.dataMappingInfo,
+                `PulseDataChannel ID ${ch.id}`,
+              ),
             ),
           );
 
@@ -260,6 +288,22 @@ export class DataSyncService {
       throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  private parseJsonSafe<T>(value: string, fieldName: string): T {
+    try {
+      return JSON.parse(value) as T;
+    } catch (error) {
+      this.logger.error(`Błąd parsowania JSON w polu: ${fieldName}`);
+
+      this.logger.error(`Długość danych: ${value?.length ?? 0}`);
+
+      this.logger.error(
+        `Fragment danych: ${JSON.stringify(value?.substring(170, 230))}`,
+      );
+
+      throw error;
     }
   }
 }
