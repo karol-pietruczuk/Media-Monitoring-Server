@@ -85,10 +85,6 @@ export class DataSyncService {
             continue;
           }
 
-          if (pulseChannels.length === 0 && totalChannels.length === 0) {
-            continue;
-          }
-
           // 3. DEDUPLIKACJA MAPOWAŃ
           const uniqueMappings = new Map<string, IOpcUaBulkMapping>();
           pulseChannels.forEach((ch) =>
@@ -105,7 +101,7 @@ export class DataSyncService {
               ch.dataMappingInfo,
               this.parseJsonSafe<IOpcUaBulkMapping>(
                 ch.dataMappingInfo,
-                `PulseDataChannel ID ${ch.id}`,
+                `TotalDataChannel ID ${ch.id}`,
               ),
             ),
           );
