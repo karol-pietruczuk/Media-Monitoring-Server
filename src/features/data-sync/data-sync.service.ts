@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource as TypeOrmDataSource } from 'typeorm';
+import { IsNull, Repository, DataSource as TypeOrmDataSource } from 'typeorm';
 
 import { DataProviderFactory } from '../../infrastructure/data-provider-factory';
 import { DataSource } from '../../domain/data-source/entities/data-source.entity';
@@ -15,6 +15,8 @@ import { IOpcUaBulkMapping } from '../../infrastructure/opcua/interface/opcua-ma
 import { Meter } from '../../domain/meter/entities/meter.entity';
 import { OpcUaConnectionDto } from '../../infrastructure/opcua/dto/opcua-connection.dto';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { PulseDataMultiplier } from '../../domain/pulse-data/entities/pulse-data-multiplier.entity';
+import { PulseDataCalculated } from '../../domain/pulse-data/entities/pulse-data-calculated.entity';
 
 @Injectable()
 export class DataSyncService {
@@ -188,6 +190,38 @@ export class DataSyncService {
               rawEntitiesToInsertPulse,
             );
             totalRecordsSaved += rawEntitiesToInsertPulse.length;
+
+            // === NOWOŚĆ: Aktualizacja stanu w pulseDataCalculated dla zmodyfikowanych liczników ===
+            for (const reading of rawEntitiesToInsertPulse) {
+              if (!reading.meter?.id || reading.pulses === undefined) continue;
+              const meterId = reading.meter.id;
+
+              // Pobieramy aktywny mnożnik dla licznika w danym momencie (lub najnowszy)
+              const multiplierRecord = await this.typeOrmDataSource
+                .getRepository(PulseDataMultiplier)
+                .findOne({
+                  where: {
+                    meter: { id: meterId },
+                    expirationDateUntil: IsNull(),
+                  },
+                });
+              const multiplierValue = multiplierRecord?.value ?? 1.0;
+
+              // Pobieramy aktualny stan z tabeli PulseDataCalculated
+              const calculatedRepo =
+                this.typeOrmDataSource.getRepository(PulseDataCalculated);
+              const calcEntity = await calculatedRepo.findOne({
+                where: { meterId },
+              });
+
+              if (calcEntity) {
+                calcEntity.pulsesAfterLastCalibration += reading.pulses;
+                calcEntity.actualValue =
+                  calcEntity.pulsesAfterLastCalibration * multiplierValue;
+                calcEntity.actualTimestamp = reading.timestamp ?? new Date();
+                await calculatedRepo.save(calcEntity);
+              }
+            }
           }
           if (rawEntitiesToInsertTotal.length > 0) {
             await this.bulkInsert(
