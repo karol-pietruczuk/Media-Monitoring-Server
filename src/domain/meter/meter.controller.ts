@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import {
@@ -32,6 +33,7 @@ import { MeterResponseDto } from './dto/meter-response.dto';
 import { MeterMessageResponseDto } from './dto/meter-message-response.dto';
 import { CalibrationResponseDto } from './dto/meter-calibration-response.dto';
 import { UpdateMeterStatusDto } from './dto/update-meter-status.dto';
+import { MeasurementQueryDto } from './dto/measurement-query.dto';
 
 @ApiTags('Meters')
 @ApiBearerAuth()
@@ -190,5 +192,36 @@ export class MeterController {
       req.user.id,
     );
     return rawMeter as MeterResponseDto;
+  }
+
+  @Get(':id/measurements/pulse')
+  @ApiOperation({
+    summary: 'Pobranie historycznych pomiarów impulsowych licznika',
+  })
+  async getPulseMeasurements(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: MeasurementQueryDto,
+  ) {
+    return this.meterService.getPulseMeasurements(id, query.from, query.to);
+  }
+
+  @Get(':id/measurements/total')
+  @ApiOperation({
+    summary: 'Pobranie historycznych pomiarów całkowitych licznika',
+  })
+  async getTotalMeasurements(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: MeasurementQueryDto,
+  ) {
+    return this.meterService.getTotalMeasurements(id, query.from, query.to);
+  }
+
+  @Get(':id/calculated')
+  @ApiOperation({
+    summary:
+      'Pobranie aktualnego, obliczonego stanu licznika (PulseDataCalculated)',
+  })
+  async getCalculatedState(@Param('id', ParseIntPipe) id: number) {
+    return this.meterService.getCalculatedState(id);
   }
 }

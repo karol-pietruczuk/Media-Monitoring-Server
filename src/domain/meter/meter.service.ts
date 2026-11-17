@@ -21,6 +21,8 @@ import { Location } from '../location/entities/location.entity';
 // === IMPORTY POWIĄZANYCH ENCJI DANYCH IMPULSOWYCH ===
 import { PulseDataCalculated } from '../pulse-data/entities/pulse-data-calculated.entity';
 import { PulseDataMultiplier } from '../pulse-data/entities/pulse-data-multiplier.entity';
+import { PulseDataMeasurement } from '../pulse-data/entities/pulse-data-measurement.entity';
+import { TotalDataMeasurement } from '../total-data/entities/total-data-measurement.entity';
 
 @Injectable()
 export class MeterService {
@@ -361,5 +363,41 @@ export class MeterService {
     );
 
     return updated;
+  }
+
+  async getPulseMeasurements(meterId: number, from?: string, to?: string) {
+    const query = this.meterRepository.manager
+      .getRepository(PulseDataMeasurement)
+      .createQueryBuilder('m')
+      .where('m.meterId = :meterId', { meterId });
+
+    if (from) query.andWhere('m.timestamp >= :from', { from });
+    if (to) query.andWhere('m.timestamp <= :to', { to });
+
+    return query.orderBy('m.timestamp', 'DESC').getMany();
+  }
+
+  async getTotalMeasurements(meterId: number, from?: string, to?: string) {
+    const query = this.meterRepository.manager
+      .getRepository(TotalDataMeasurement)
+      .createQueryBuilder('m')
+      .where('m.meterId = :meterId', { meterId });
+
+    if (from) query.andWhere('m.timestamp >= :from', { from });
+    if (to) query.andWhere('m.timestamp <= :to', { to });
+
+    return query.orderBy('m.timestamp', 'DESC').getMany();
+  }
+
+  async getCalculatedState(meterId: number) {
+    const state = await this.meterRepository.manager
+      .getRepository(PulseDataCalculated)
+      .findOne({ where: { meterId } });
+
+    if (!state)
+      throw new NotFoundException(
+        `Brak stanu obliczonego dla licznika o ID ${meterId}`,
+      );
+    return state;
   }
 }
