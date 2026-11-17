@@ -23,6 +23,7 @@ import { PulseDataCalculated } from '../pulse-data/entities/pulse-data-calculate
 import { PulseDataMultiplier } from '../pulse-data/entities/pulse-data-multiplier.entity';
 import { PulseDataMeasurement } from '../pulse-data/entities/pulse-data-measurement.entity';
 import { TotalDataMeasurement } from '../total-data/entities/total-data-measurement.entity';
+import { MeterHistory } from './entities/meter-history.entity';
 
 @Injectable()
 export class MeterService {
@@ -399,5 +400,30 @@ export class MeterService {
         `Brak stanu obliczonego dla licznika o ID ${meterId}`,
       );
     return state;
+  }
+
+  async getCalibrations(meterId: number) {
+    return this.calibrationRepository.find({
+      where: { meter: { id: meterId } },
+      order: { timestamp: 'DESC' },
+    });
+  }
+
+  async getMeterHistory(meterId: number): Promise<MeterHistory[]> {
+    // 1. Sprawdzamy najpierw czy licznik w ogóle istnieje
+    const meterExists = await this.meterRepository.findOne({
+      where: { id: meterId },
+    });
+    if (!meterExists) {
+      throw new NotFoundException(
+        `Nie można pobrać historii. Licznik o ID ${meterId} nie istnieje.`,
+      );
+    }
+
+    // 2. Używamy wbudowanego repozytorium TypeORM zamiast surowego query()
+    return this.meterRepository.manager.getRepository(MeterHistory).find({
+      where: { meterId },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

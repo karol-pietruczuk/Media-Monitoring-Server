@@ -224,4 +224,21 @@ export class MeterController {
   async getCalculatedState(@Param('id', ParseIntPipe) id: number) {
     return this.meterService.getCalculatedState(id);
   }
+
+  @Get(':id/calibrations')
+  @ApiOperation({
+    summary: 'Pobranie historii punktów kalibracyjnych licznika',
+  })
+  async getCalibrations(@Param('id', ParseIntPipe) id: number) {
+    return this.meterService.getCalibrations(id);
+  }
+
+  @Get(':id/history')
+  @Roles(UserRole.Admin)
+  @ApiOperation({
+    summary: 'Pobranie historii zmian (Audit Log) dla licznika [ADMIN]',
+  })
+  async getMeterHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.meterService.getMeterHistory(id);
+  }
 }
