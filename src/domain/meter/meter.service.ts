@@ -426,4 +426,180 @@ export class MeterService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async getUniversalMeasurements(
+    meterId: number,
+    from?: string,
+    to?: string,
+    typesParam?: string,
+    includeMeasurements = false,
+  ) {
+    // 1. Pobieramy licznik wraz z jednostką (unit) oraz flagami aktywności[cite: 1]
+    const meter = await this.findById(meterId);
+
+    const requestedTypes = typesParam
+      ? typesParam.split(',').map((t) => t.trim().toLowerCase())
+      : ['pulse', 'total'];
+
+    const result: Record<string, unknown> = {
+      meterId: meter.id,
+      meterName: meter.name,
+      symbol: meter.symbol,
+      unit: meter.unit, // np. 'm³' lub 'l'[cite: 1]
+      period: {
+        from: from ?? null,
+        to: to ?? null,
+      },
+    };
+
+    // 2. Obsługa danych impulsowych (pulseValues)
+    if (requestedTypes.includes('pulse')) {
+      if (!meter.activePulseData) {
+        //[cite: 1]
+        result.pulseData = {
+          enabled: false,
+          message:
+            'Zbieranie danych impulsowych (activePulseData) dla tego licznika jest wyłączone.',
+        };
+      } else {
+        const query = this.meterRepository.manager
+          .getRepository(PulseDataMeasurement)
+          .createQueryBuilder('m')
+          .where('m.meterId = :meterId', { meterId });
+
+        if (from) query.andWhere('m.timestamp >= :from', { from });
+        if (to) query.andWhere('m.timestamp <= :to', { to });
+
+        const measurements = await query
+          .orderBy('m.timestamp', 'ASC')
+          .getMany();
+
+        // Pobieramy mnożniki licznika do prawidłowego przeliczenia w czasie[cite: 1]
+        const multipliers = await this.meterRepository.manager
+          .getRepository(PulseDataMultiplier)
+          .find({
+            where: { meter: { id: meterId } },
+            order: { expirationDateFrom: 'ASC' },
+          });
+
+        let totalPulses = 0;
+        let totalValue = 0;
+
+        const breakdownMap = new Map<
+          number,
+          {
+            multiplierId: number;
+            multiplierValue: number;
+            expirationDateFrom: Date;
+            expirationDateUntil: Date | null;
+            pulses: number;
+            value: number;
+          }
+        >();
+
+        for (const m of measurements) {
+          totalPulses += m.pulses;
+          const mTime = new Date(m.timestamp).getTime();
+
+          const activeMultiplier = multipliers.find((mu) => {
+            const fromTime = new Date(mu.expirationDateFrom).getTime();
+            const untilTime = mu.expirationDateUntil
+              ? new Date(mu.expirationDateUntil).getTime()
+              : Infinity;
+            return mTime >= fromTime && mTime < untilTime;
+          });
+
+          const multVal = activeMultiplier
+            ? Number(activeMultiplier.value)
+            : 1.0;
+          const multId = activeMultiplier ? activeMultiplier.id : 0;
+          const calculatedVal = m.pulses * multVal;
+          totalValue += calculatedVal;
+
+          if (!breakdownMap.has(multId)) {
+            breakdownMap.set(multId, {
+              multiplierId: multId,
+              multiplierValue: multVal,
+              expirationDateFrom:
+                activeMultiplier?.expirationDateFrom ?? new Date(0),
+              expirationDateUntil:
+                activeMultiplier?.expirationDateUntil ?? null,
+              pulses: 0,
+              value: 0,
+            });
+          }
+
+          const entry = breakdownMap.get(multId)!;
+          entry.pulses += m.pulses;
+          entry.value += calculatedVal;
+        }
+
+        // Zaokrąglenie do 4 miejsc po przecinku (zgodnie ze skalą numeric(17,4) w bazie)[cite: 1]
+        const roundedTotalValue = Number(totalValue.toFixed(4));
+        const multiplierBreakdown = Array.from(breakdownMap.values()).map(
+          (item) => ({
+            ...item,
+            value: Number(item.value.toFixed(4)),
+          }),
+        );
+
+        result.pulseData = {
+          enabled: true,
+          unit: meter.unit,
+          measurementsCount: measurements.length,
+          totalPulses,
+          totalValue: roundedTotalValue,
+          multiplierBreakdown,
+          ...(includeMeasurements ? { measurements } : {}),
+        };
+      }
+    }
+
+    // 3. Obsługa danych całkowitych (totalValues)
+    if (requestedTypes.includes('total')) {
+      if (!meter.activeTotalData) {
+        //[cite: 1]
+        result.totalData = {
+          enabled: false,
+          message:
+            'Zbieranie danych całkowitych (activeTotalData) dla tego licznika jest wyłączone.',
+        };
+      } else {
+        const query = this.meterRepository.manager
+          .getRepository(TotalDataMeasurement)
+          .createQueryBuilder('m')
+          .where('m.meterId = :meterId', { meterId });
+
+        if (from) query.andWhere('m.timestamp >= :from', { from });
+        if (to) query.andWhere('m.timestamp <= :to', { to });
+
+        const measurements = await query
+          .orderBy('m.timestamp', 'ASC')
+          .getMany();
+
+        const firstValue =
+          measurements.length > 0 ? Number(measurements[0].value) : null;
+        const lastValue =
+          measurements.length > 0
+            ? Number(measurements[measurements.length - 1].value)
+            : null;
+        const consumption =
+          firstValue !== null && lastValue !== null
+            ? Number((lastValue - firstValue).toFixed(3)) // Skala decimal(10,3) w encji[cite: 1]
+            : 0;
+
+        result.totalData = {
+          enabled: true,
+          unit: meter.unit,
+          measurementsCount: measurements.length,
+          startValue: firstValue,
+          endValue: lastValue,
+          consumption,
+          ...(includeMeasurements ? { measurements } : {}),
+        };
+      }
+    }
+
+    return result;
+  }
 }

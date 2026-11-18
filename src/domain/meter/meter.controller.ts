@@ -34,6 +34,7 @@ import { MeterMessageResponseDto } from './dto/meter-message-response.dto';
 import { CalibrationResponseDto } from './dto/meter-calibration-response.dto';
 import { UpdateMeterStatusDto } from './dto/update-meter-status.dto';
 import { MeasurementQueryDto } from './dto/measurement-query.dto';
+import { UniversalMeasurementQueryDto } from './dto/universal-measurement-query.dto';
 
 @ApiTags('Meters')
 @ApiBearerAuth()
@@ -240,5 +241,23 @@ export class MeterController {
   })
   async getMeterHistory(@Param('id', ParseIntPipe) id: number) {
     return this.meterService.getMeterHistory(id);
+  }
+
+  @Get(':id/measurements')
+  @ApiOperation({
+    summary:
+      'Uniwersalny endpoint do pobierania podsumowań i opcjonalnie surowych pomiarów impulsowych/całkowitych [WSZYSCY]',
+  })
+  async getUniversalMeasurements(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: UniversalMeasurementQueryDto,
+  ) {
+    return this.meterService.getUniversalMeasurements(
+      id,
+      query.from,
+      query.to,
+      query.types,
+      query.includeMeasurements,
+    );
   }
 }
