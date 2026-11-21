@@ -1,6 +1,22 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsOptional, IsDateString, IsString, IsBoolean } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsDateString,
+  IsString,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+
+export enum MeasurementGroupBy {
+  MINUTE = 'minute',
+  HOUR = 'hour',
+  DAY = 'day',
+  MONTH = 'month',
+}
 
 export class UniversalMeasurementQueryDto {
   @ApiPropertyOptional({
@@ -21,7 +37,7 @@ export class UniversalMeasurementQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'Typy danych do pobrania oddzielone przecinkiem (pulse, total). Jeśli puste, pobiera oba.',
+      'Typy danych oddzielone przecinkiem (pulse, total). Domyślnie pobiera oba.',
     example: 'pulse,total',
   })
   @IsOptional()
@@ -29,8 +45,18 @@ export class UniversalMeasurementQueryDto {
   types?: string;
 
   @ApiPropertyOptional({
+    enum: MeasurementGroupBy,
+    description: 'Interwał agregacji danych pod wykres (domyślnie hour).',
+    example: MeasurementGroupBy.HOUR,
+    default: MeasurementGroupBy.HOUR,
+  })
+  @IsOptional()
+  @IsEnum(MeasurementGroupBy)
+  groupBy?: MeasurementGroupBy = MeasurementGroupBy.HOUR;
+
+  @ApiPropertyOptional({
     description:
-      'Czy dołączyć surową tablicę wszystkich pomiarów z zadanego zakresu (domyślnie false).',
+      'Czy dołączyć surową tablicę measurements z zakresu (domyślnie false).',
     example: false,
     default: false,
   })
@@ -38,4 +64,17 @@ export class UniversalMeasurementQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeMeasurements?: boolean = false;
+
+  @ApiPropertyOptional({
+    description:
+      'Maksymalna liczba kubełków na wykresie / surowych pomiarów (ochrona pamięci).',
+    example: 2000,
+    default: 2000,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  limit?: number = 2000;
 }

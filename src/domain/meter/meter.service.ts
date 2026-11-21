@@ -1,5 +1,6 @@
 // File: meter/meter.service.ts
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -24,6 +25,10 @@ import { PulseDataMultiplier } from '../pulse-data/entities/pulse-data-multiplie
 import { PulseDataMeasurement } from '../pulse-data/entities/pulse-data-measurement.entity';
 import { TotalDataMeasurement } from '../total-data/entities/total-data-measurement.entity';
 import { MeterHistory } from './entities/meter-history.entity';
+import {
+  MeasurementGroupBy,
+  UniversalMeasurementQueryDto,
+} from './dto/universal-measurement-query.dto';
 
 @Injectable()
 export class MeterService {
@@ -427,32 +432,62 @@ export class MeterService {
     });
   }
 
+  private getSqlDatePart(
+    groupBy: MeasurementGroupBy,
+  ): 'minute' | 'hour' | 'day' | 'month' {
+    switch (groupBy) {
+      case MeasurementGroupBy.MINUTE:
+        return 'minute';
+      case MeasurementGroupBy.HOUR:
+        return 'hour';
+      case MeasurementGroupBy.DAY:
+        return 'day';
+      case MeasurementGroupBy.MONTH:
+        return 'month';
+      default:
+        return 'hour';
+    }
+  }
+
   async getUniversalMeasurements(
     meterId: number,
-    from?: string,
-    to?: string,
-    typesParam?: string,
-    includeMeasurements = false,
+    queryParams: UniversalMeasurementQueryDto,
   ) {
-    // 1. Pobieramy licznik wraz z jednostką (unit) oraz flagami aktywności[cite: 1]
-    const meter = await this.findById(meterId);
+    const {
+      from,
+      to,
+      types,
+      groupBy = MeasurementGroupBy.HOUR,
+      includeMeasurements = false,
+      limit = 2000,
+    } = queryParams;
 
-    const requestedTypes = typesParam
-      ? typesParam.split(',').map((t) => t.trim().toLowerCase())
+    if (from && to && new Date(from).getTime() > new Date(to).getTime()) {
+      throw new BadRequestException(
+        'Parametr "from" nie może być późniejszy niż "to".',
+      );
+    }
+
+    const meter = await this.findById(meterId); //
+    const requestedTypes = types
+      ? types.split(',').map((t) => t.trim().toLowerCase())
       : ['pulse', 'total'];
+
+    const sqlPart = this.getSqlDatePart(groupBy);
 
     const result: Record<string, unknown> = {
       meterId: meter.id,
       meterName: meter.name,
       symbol: meter.symbol,
-      unit: meter.unit, // np. 'm³' lub 'l'[cite: 1]
+      unit: meter.unit, //
+      groupBy,
       period: {
         from: from ?? null,
         to: to ?? null,
       },
     };
 
-    // 2. Obsługa danych impulsowych (pulseValues)
+    // 1. DANE IMPULSOWE (pulseData)
     if (requestedTypes.includes('pulse')) {
       if (!meter.activePulseData) {
         //[cite: 1]
@@ -462,19 +497,16 @@ export class MeterService {
             'Zbieranie danych impulsowych (activePulseData) dla tego licznika jest wyłączone.',
         };
       } else {
-        const query = this.meterRepository.manager
+        const qb = this.meterRepository.manager
           .getRepository(PulseDataMeasurement)
           .createQueryBuilder('m')
           .where('m.meterId = :meterId', { meterId });
 
-        if (from) query.andWhere('m.timestamp >= :from', { from });
-        if (to) query.andWhere('m.timestamp <= :to', { to });
+        if (from) qb.andWhere('m.timestamp >= :from', { from });
+        if (to) qb.andWhere('m.timestamp <= :to', { to });
 
-        const measurements = await query
-          .orderBy('m.timestamp', 'ASC')
-          .getMany();
+        const measurements = await qb.orderBy('m.timestamp', 'ASC').getMany();
 
-        // Pobieramy mnożniki licznika do prawidłowego przeliczenia w czasie[cite: 1]
         const multipliers = await this.meterRepository.manager
           .getRepository(PulseDataMultiplier)
           .find({
@@ -484,6 +516,16 @@ export class MeterService {
 
         let totalPulses = 0;
         let totalValue = 0;
+
+        const bucketsMap = new Map<
+          string,
+          {
+            bucketStart: Date;
+            pulses: number;
+            value: number;
+            samplesCount: number;
+          }
+        >();
 
         const breakdownMap = new Map<
           number,
@@ -499,7 +541,8 @@ export class MeterService {
 
         for (const m of measurements) {
           totalPulses += m.pulses;
-          const mTime = new Date(m.timestamp).getTime();
+          const mDate = new Date(m.timestamp);
+          const mTime = mDate.getTime();
 
           const activeMultiplier = multipliers.find((mu) => {
             const fromTime = new Date(mu.expirationDateFrom).getTime();
@@ -516,6 +559,24 @@ export class MeterService {
           const calculatedVal = m.pulses * multVal;
           totalValue += calculatedVal;
 
+          // Kubełek czasowy wg groupBy
+          const bucketStart = this.truncateDate(mDate, groupBy);
+          const bucketKey = bucketStart.toISOString();
+
+          if (!bucketsMap.has(bucketKey)) {
+            bucketsMap.set(bucketKey, {
+              bucketStart,
+              pulses: 0,
+              value: 0,
+              samplesCount: 0,
+            });
+          }
+          const bucket = bucketsMap.get(bucketKey)!;
+          bucket.pulses += m.pulses;
+          bucket.value += calculatedVal;
+          bucket.samplesCount += 1;
+
+          // Rozbicie na mnożniki w okresie
           if (!breakdownMap.has(multId)) {
             breakdownMap.set(multId, {
               multiplierId: multId,
@@ -528,34 +589,45 @@ export class MeterService {
               value: 0,
             });
           }
-
           const entry = breakdownMap.get(multId)!;
           entry.pulses += m.pulses;
           entry.value += calculatedVal;
         }
 
-        // Zaokrąglenie do 4 miejsc po przecinku (zgodnie ze skalą numeric(17,4) w bazie)[cite: 1]
-        const roundedTotalValue = Number(totalValue.toFixed(4));
-        const multiplierBreakdown = Array.from(breakdownMap.values()).map(
-          (item) => ({
-            ...item,
-            value: Number(item.value.toFixed(4)),
-          }),
-        );
+        const allBuckets = Array.from(bucketsMap.values()).map((b) => ({
+          bucketStart: b.bucketStart,
+          pulses: b.pulses,
+          value: Number(b.value.toFixed(4)),
+          samplesCount: b.samplesCount,
+        }));
+
+        const truncatedBuckets = allBuckets.slice(0, limit);
 
         result.pulseData = {
           enabled: true,
-          unit: meter.unit,
+          unit: meter.unit, //[cite: 1]
           measurementsCount: measurements.length,
           totalPulses,
-          totalValue: roundedTotalValue,
-          multiplierBreakdown,
-          ...(includeMeasurements ? { measurements } : {}),
+          totalValue: Number(totalValue.toFixed(4)),
+          multiplierBreakdown: Array.from(breakdownMap.values()).map(
+            (item) => ({
+              ...item,
+              value: Number(item.value.toFixed(4)),
+            }),
+          ),
+          series: truncatedBuckets,
+          seriesTruncated: allBuckets.length > limit,
+          ...(includeMeasurements
+            ? {
+                measurements: measurements.slice(0, limit),
+                measurementsTruncated: measurements.length > limit,
+              }
+            : {}),
         };
       }
     }
 
-    // 3. Obsługa danych całkowitych (totalValues)
+    // 2. DANE CAŁKOWITE (totalData) – agregacja po kubełku w MS SQL
     if (requestedTypes.includes('total')) {
       if (!meter.activeTotalData) {
         //[cite: 1]
@@ -565,41 +637,92 @@ export class MeterService {
             'Zbieranie danych całkowitych (activeTotalData) dla tego licznika jest wyłączone.',
         };
       } else {
-        const query = this.meterRepository.manager
+        const qb = this.meterRepository.manager
           .getRepository(TotalDataMeasurement)
           .createQueryBuilder('m')
+          .select(`DATETRUNC(${sqlPart}, m.timestamp)`, 'bucketStart')
+          .addSelect('MIN(m.value)', 'startValue')
+          .addSelect('MAX(m.value)', 'endValue')
+          .addSelect('COUNT(m.id)', 'samplesCount')
           .where('m.meterId = :meterId', { meterId });
 
-        if (from) query.andWhere('m.timestamp >= :from', { from });
-        if (to) query.andWhere('m.timestamp <= :to', { to });
+        if (from) qb.andWhere('m.timestamp >= :from', { from });
+        if (to) qb.andWhere('m.timestamp <= :to', { to });
 
-        const measurements = await query
-          .orderBy('m.timestamp', 'ASC')
-          .getMany();
+        const rawBuckets = await qb
+          .groupBy(`DATETRUNC(${sqlPart}, m.timestamp)`)
+          .orderBy('bucketStart', 'ASC')
+          .limit(limit)
+          .getRawMany<{
+            bucketStart: Date;
+            startValue: string | number;
+            endValue: string | number;
+            samplesCount: string | number;
+          }>();
 
-        const firstValue =
-          measurements.length > 0 ? Number(measurements[0].value) : null;
-        const lastValue =
-          measurements.length > 0
-            ? Number(measurements[measurements.length - 1].value)
-            : null;
-        const consumption =
-          firstValue !== null && lastValue !== null
-            ? Number((lastValue - firstValue).toFixed(3)) // Skala decimal(10,3) w encji[cite: 1]
+        const series = rawBuckets.map((row) => {
+          const startVal = Number(row.startValue);
+          const endVal = Number(row.endValue);
+          return {
+            bucketStart: new Date(row.bucketStart),
+            startValue: Number(startVal.toFixed(3)),
+            endValue: Number(endVal.toFixed(3)),
+            consumption: Number((endVal - startVal).toFixed(3)),
+            samplesCount: Number(row.samplesCount),
+          };
+        });
+
+        const overallStart = series.length > 0 ? series[0].startValue : null;
+        const overallEnd =
+          series.length > 0 ? series[series.length - 1].endValue : null;
+        const overallConsumption =
+          overallStart !== null && overallEnd !== null
+            ? Number((overallEnd - overallStart).toFixed(3))
             : 0;
+
+        let measurements: TotalDataMeasurement[] | undefined;
+        let measurementsTruncated = false;
+
+        if (includeMeasurements) {
+          const rawQb = this.meterRepository.manager
+            .getRepository(TotalDataMeasurement)
+            .createQueryBuilder('m')
+            .where('m.meterId = :meterId', { meterId });
+
+          if (from) rawQb.andWhere('m.timestamp >= :from', { from });
+          if (to) rawQb.andWhere('m.timestamp <= :to', { to });
+
+          const allRaw = await rawQb.orderBy('m.timestamp', 'ASC').getMany();
+          measurements = allRaw.slice(0, limit);
+          measurementsTruncated = allRaw.length > limit;
+        }
 
         result.totalData = {
           enabled: true,
-          unit: meter.unit,
-          measurementsCount: measurements.length,
-          startValue: firstValue,
-          endValue: lastValue,
-          consumption,
-          ...(includeMeasurements ? { measurements } : {}),
+          unit: meter.unit, //[cite: 1]
+          startValue: overallStart,
+          endValue: overallEnd,
+          consumption: overallConsumption,
+          series,
+          ...(includeMeasurements
+            ? { measurements, measurementsTruncated }
+            : {}),
         };
       }
     }
 
     return result;
+  }
+
+  private truncateDate(date: Date, groupBy: MeasurementGroupBy): Date {
+    const d = new Date(date.getTime());
+    d.setUTCSeconds(0, 0);
+    if (groupBy === MeasurementGroupBy.MINUTE) return d;
+    d.setUTCMinutes(0);
+    if (groupBy === MeasurementGroupBy.HOUR) return d;
+    d.setUTCHours(0);
+    if (groupBy === MeasurementGroupBy.DAY) return d;
+    d.setUTCDate(1);
+    return d;
   }
 }

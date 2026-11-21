@@ -246,18 +246,12 @@ export class MeterController {
   @Get(':id/measurements')
   @ApiOperation({
     summary:
-      'Uniwersalny endpoint do pobierania podsumowań i opcjonalnie surowych pomiarów impulsowych/całkowitych [WSZYSCY]',
+      'Agregacja danych pod wykresy (minute/hour/day/month), sumy, przeliczniki oraz opcjonalne surowe pomiary [WSZYSCY]',
   })
   async getUniversalMeasurements(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: UniversalMeasurementQueryDto,
   ) {
-    return this.meterService.getUniversalMeasurements(
-      id,
-      query.from,
-      query.to,
-      query.types,
-      query.includeMeasurements,
-    );
+    return this.meterService.getUniversalMeasurements(id, query);
   }
 }
